@@ -18,6 +18,10 @@
 
 #pragma once
 
+// These types are used directly in this header. Do not rely on include order.
+#include "Lib/BaseType.h"    // ICoord2D, UnsignedInt, UnsignedShort
+#include "Common/GameType.h" // ObjectID, INVALID_ID
+
 class PathfindCell;
 
 class PathfindCellInfo
