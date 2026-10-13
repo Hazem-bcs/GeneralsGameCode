@@ -81,3 +81,24 @@ The `scripts/map_unpack.py` helper decodes owned EA EAR/RefPack-compressed `.map
 4. Only after the large map works, patch player-slot and AI limits, then incrementally try 10 and 12 total players.
 
 No source code changes to the game engine have been performed yet: only map-analysis and map-generation tools were added.
+
+## Actual build result (2026-10-13)
+
+**Both compilation targets succeeded** on Ubuntu 24.04 using `./scripts/docker-build.sh`:
+
+| Target | Output | Bytes | SHA-256 |
+|---|---|---:|---|
+| `z_generals` | `build/docker/GeneralsMD/generalszh.exe` | 6,365,252 | `c9f186403e20c06a2741d90ae466b1de1b74d20bb486677067d94fdfd3a85525` |
+| `z_worldbuilder` | `build/docker/GeneralsMD/WorldBuilderZH.exe` | 6,340,680 | `ad1a6535ce2c9e078cfc2d745076ed3ce0846bb4cb62ff74bf72838160071180` |
+
+Both binaries were verified as **32-bit Windows GUI PE executables**. This is a build success, **not a runtime/playability validation**. No game engine player or map size limits have been changed.
+
+An initial Docker image setup failed due to HTTP 500 on GitHub's MinGit asset; the build Dockerfile now retries and uses a checksum-verified fallback mirror. Later the source revealed missing type includes / PreRTS initialization in `Core/GameEngine/Include/GameLogic/Pathfinder/PathfindCellInfo.h` and three associated pathfinder translation units. These were fixed in the research branch, and compilation/links succeeded.
+
+`python3 -m unittest discover -s Tests/MapTools -p 'test_*.py' -q`: **12 tests passed**.
+
+Disk free immediately after both targets built was approximately **13 GiB** on the Ubuntu filesystem. Do not clean unrelated projects; disk cleanup is separately managed.
+
+### Windows test installation guidance
+
+To test on the user's already-installed Windows partition, first create a **separate Windows-side copy of the original Zero Hour game installation**, then stage the compiled `generalszh.exe` in that copy and test launch; do not overwrite `Game.dat`, `Generals.exe`, or `WorldBuilder.exe` in the original installation. Use a compatible original-data folder and a writable user Maps path. The game has not been launched on either platform during this build work, and Wine is not installed on the Ubuntu host PATH. This repository's Docker builder uses Wine internally for **building**, not for native gameplay.
