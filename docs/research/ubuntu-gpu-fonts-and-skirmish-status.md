@@ -44,3 +44,17 @@ This launches **only the test environment**. It is not a command to build from s
 - Only then start implementing >8 AI players. The goal may be user + 12 or 16 AI (13/17 total), so clarify total player slots in the future.
 
 The Ubuntu root partition had roughly 9.6 GiB free near the latest tests. No disk cleanup, original Windows modifications, or game binaries/assets added to GitHub.
+
+## Confirmed replay-playback baseline
+
+The user's Windows Documents includes six .rep files. A **private copy** of `nuke.rep` was staged as `BaselineNuke.rep` in the isolated Wine prefix's `Replays` folder (about 148 KiB). Launching the **compiled** `generalszh.exe` with `-quickstart -loadreplay BaselineNuke.rep` yielded the replay's loading screen with two players and subsequently full **in-game battle rendering** with active units, a building, HUD command buttons, resources and timer. This establishes a reproducible gameplay/rendering baseline on Intel GPU without needing to navigate the blank shell-menu labels.
+
+The replay's embedded map identifier (ASCII header `M=`) is `userdata/maps/[rank] vendetta zh v1`. **It is not our experimental Twilight Flame 600x600 map.** Avoid claiming map scaling is gameplay-validated.
+
+Source audit of `Core/GameEngine/Source/Common/CommandLine.cpp`:
+- `-loadreplay`, `-loadsave`, and `-quickstart` are accepted in release builds.
+- `-map` is within `#if RTS_DEBUG`, so adding `-map` to our current release executable is not a supported way to start a custom skirmish. Furthermore, its handler sets `m_mapName` rather than explicitly arranging a new skirmish.
+- Replays include a map path and map-CRC metadata (`MC=`). Substituting an enlarged map into an existing replay without accounting for this check is not yet a valid test method.
+
+### Revised next task
+Find a safe way to launch a **custom 600x600 skirmish** via the shell-menu UI or a purpose-built test startup path. Use this working replay as the control. Keep 700/800/1000 conclusions on hold until actual custom-map gameplay is demonstrated.
