@@ -17,7 +17,10 @@ import argparse
 import struct
 from pathlib import Path
 
-from map_probe import inspect_map, MapFormatError
+if __package__:
+    from .map_probe import inspect_map, MapFormatError
+else:
+    from map_probe import inspect_map, MapFormatError
 
 MAX_INPUT_BYTES = 128 * 1024 * 1024
 MAX_GRID_SAMPLES = 4_000_000
