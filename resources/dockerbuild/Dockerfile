@@ -35,7 +35,13 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cm
     && find /build/tools/ -name "*.zip" -exec rm -f {} +
 
 # Install git windows
-RUN wget https://github.com/git-for-windows/git/releases/download/v${GIT_VERSION}.windows.1/MinGit-${GIT_VERSION}-64-bit.zip \
+# GitHub release assets occasionally respond with HTTP 500; use a checksum-verified mirror as fallback.
+# SHA-256 from the official Git for Windows 2.49.0 release announcement.
+RUN (wget --tries=2 --waitretry=2 --retry-on-http-error=500,502,503,504 \
+         https://github.com/git-for-windows/git/releases/download/v${GIT_VERSION}.windows.1/MinGit-${GIT_VERSION}-64-bit.zip \
+      || wget --tries=2 --waitretry=2 \
+         https://mirrors.huaweicloud.com/git-for-windows/v${GIT_VERSION}.windows.1/MinGit-${GIT_VERSION}-64-bit.zip) \
+    && echo "971cdee7c0feaa1e41369c46da88d1000a24e79a6f50191c820100338fb7eca5  MinGit-${GIT_VERSION}-64-bit.zip" | sha256sum -c - \
     && unzip MinGit-${GIT_VERSION}-64-bit.zip -d /build/tools/ \
     && mv /build/tools/cmd /build/tools/git \
     && find /build/tools/ -name "*.zip" -exec rm -f {} +
