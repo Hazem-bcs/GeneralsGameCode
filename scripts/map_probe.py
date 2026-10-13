@@ -6,6 +6,7 @@ Format references:
   GeneralsMD/Code/Tools/WorldBuilder/src/WHeightMapEdit.cpp
 """
 import argparse
+from io import BytesIO
 import json
 import struct
 import sys
@@ -29,11 +30,95 @@ def _i32(f, end):
     return struct.unpack("<i", _read(f, 4, end))[0]
 
 
+
+def _decode_refpack(data, expected_size):
+    """Expand EA RefPack payload, based on the engine's REF_decode function."""
+    if len(data) < 5:
+        raise MapFormatError("Truncated RefPack header")
+    kind = int.from_bytes(data[:2], "big")
+    if kind not in (0x10FB, 0x11FB, 0x90FB, 0x91FB):
+        raise MapFormatError("Invalid RefPack signature")
+    size_bytes = 4 if kind & 0x8000 else 3
+    pos = 2 + (size_bytes if kind & 0x100 else 0)
+    if pos + size_bytes > len(data):
+        raise MapFormatError("Truncated RefPack size")
+    size = int.from_bytes(data[pos:pos + size_bytes], "big")
+    pos += size_bytes
+    if size != expected_size or size <= 0 or size > 128 * 1024 * 1024:
+        raise MapFormatError("Unexpected/unsafe RefPack output size")
+    output = bytearray()
+
+    def literals(count):
+        nonlocal pos
+        if pos + count > len(data) or len(output) + count > size:
+            raise MapFormatError("Truncated or oversized RefPack literal")
+        output.extend(data[pos:pos + count])
+        pos += count
+
+    def backref(distance, count):
+        if distance < 1 or distance > len(output) or count < 1 or len(output) + count > size:
+            raise MapFormatError("Invalid RefPack back-reference")
+        start = len(output) - distance
+        while count:
+            take = min(count, len(output) - start)
+            output.extend(output[start:start + take])
+            count -= take
+
+    while pos < len(data):
+        first = data[pos]
+        pos += 1
+        if first < 0x80:
+            if pos >= len(data):
+                raise MapFormatError("Truncated short RefPack command")
+            second = data[pos]
+            pos += 1
+            literals(first & 3)
+            backref((((first & 0x60) << 3) | second) + 1,
+                    ((first & 0x1C) >> 2) + 3)
+        elif first < 0xC0:
+            if pos + 2 > len(data):
+                raise MapFormatError("Truncated medium RefPack command")
+            second, third = data[pos:pos + 2]
+            pos += 2
+            literals(second >> 6)
+            backref((((second & 0x3F) << 8) | third) + 1,
+                    (first & 0x3F) + 4)
+        elif first < 0xE0:
+            if pos + 3 > len(data):
+                raise MapFormatError("Truncated long RefPack command")
+            second, third, fourth = data[pos:pos + 3]
+            pos += 3
+            literals(first & 3)
+            backref((((first & 0x10) << 12) | (second << 8) | third) + 1,
+                    ((first & 0x0C) << 6) + fourth + 5)
+        elif first < 0xFC:
+            literals(((first & 0x1F) << 2) + 4)
+        else:
+            literals(first & 3)
+            if len(output) != size:
+                raise MapFormatError("RefPack output length mismatch")
+            return bytes(output)
+    raise MapFormatError("RefPack end marker missing")
+
+
+def _unwrap_map(data):
+    """Return decompressed map bytes and compression label."""
+    if data[:3] == b"EAR" and len(data) >= 4 and data[3] == 0:
+        if len(data) < 13:
+            raise MapFormatError("Truncated EAR envelope")
+        size = struct.unpack_from("<I", data, 4)[0]
+        return _decode_refpack(data[8:], size), "EA RefPack"
+    if data.startswith(b"CkMp"):
+        return data, "none"
+    raise MapFormatError("Unsupported map signature or compression")
+
+
 def inspect_map(path):
     """Return map dimensions, including the non-playable border."""
     path = Path(path)
-    with path.open("rb") as f:
-        end = path.stat().st_size
+    raw, compression = _unwrap_map(path.read_bytes())
+    with BytesIO(raw) as f:
+        end = len(raw)
         if _read(f, 4, end) != b"CkMp":
             raise MapFormatError("Not an uncompressed CkMp map")
         symbol_count = _i32(f, end)
@@ -74,6 +159,7 @@ def inspect_map(path):
                 return {
                     "file": str(path),
                     "format": "CkMp",
+                    "compression": compression,
                     "heightmap_version": version,
                     "stored_width": width,
                     "stored_height": height,
