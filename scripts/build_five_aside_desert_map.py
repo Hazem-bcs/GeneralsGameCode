@@ -79,7 +79,11 @@ def route_waypoint(prototype, label, waypoint_id, x, y):
     return prototype[0], prototype[1], bytes(data)
 
 
-def build(data):
+def build(data, style='v4'):
+    if style not in ('v4', 'v5'):
+        raise ValueError('Supported visual styles are v4 and v5')
+    detail_v5 = style == 'v5'
+
     table, chunks = parse_chunks(data)
     by_name = {n: i for i, (_, _, _, n) in enumerate(chunks)}
     hi, bi, oi = (by_name[n] for n in ('HeightMapData', 'BlendTileData', 'ObjectsList'))
@@ -143,12 +147,28 @@ def build(data):
                 kind = 4  # secondary sand with natural patches
             else:
                 kind = 0
+            if detail_v5:
+                # Paint weathered strata and windblown washes on the existing,
+                # audited collision terrain. Both coordinates mirror across x=3000.
+                # Roads, build pads and resources keep their original paint.
+                ripple = (.55 * math.sin(mx / 103 + my / 237)
+                          + .39 * math.cos(mx / 179 - my / 111)
+                          + .2 * math.sin(my / 67))
+                if kind == 3 and h > BASE + 34 and paint_dist > 105 and ripple > -.12:
+                    kind = 6  # broken rocky sand at mesa foothills
+                elif kind in (0, 4) and pad_dist > 110 and resource_dist > 110 and paint_dist > 105 and ripple > .48:
+                    kind = 5  # dune-wash sand, no obstruction or height changes
             terrain[idx] = kind
     chunks[hi] = (*chunks[hi][:2], bytes(height), chunks[hi][3])
     bitmap_count, classes, raw_classes = read_texture_classes(chunks[bi][2], width, rows)
     wanted = ('SandMediumType6', 'DirtMediumType10', 'CliffLargeType11',
               'RocksMediumType1', 'SandMediumType8')
     palette = [next(c for c in classes if c[3] == name) for name in wanted]
+    if detail_v5:
+        # Texture names come from the owner's base map; no licensed asset is
+        # embedded in this generator and the generated .map stays private.
+        palette.extend(next(c for c in classes if c[3] == name)
+                       for name in ('SandMediumType10', 'SandMediumType7Rocky'))
     def tile(kind, gx, gy):
         first, _, edge, _ = palette[kind]
         # Preserve the original texture's tile/quadrant ordering for seamless repetition.
@@ -221,7 +241,7 @@ def build(data):
                           0 if x < 3000 else math.pi) for i, (x, y, kind) in enumerate(villages)]
     rng = random.Random(5010)
     decorations = []
-    for _ in range(90):
+    for _ in range(155 if detail_v5 else 90):
         x, y = rng.randint(2420, 2980), rng.choice((rng.randint(1550, 2400), rng.randint(3600, 4450)))
         gx, gy = round(x / 10) + border, round(y / 10) + border
         if height[28 + gy * width + gx] < BASE + 65:
@@ -265,7 +285,10 @@ def build(data):
         if any(math.hypot(x - a, y - b) < 125 for x, y in path['vertices'] for a, b, _ in supplies + tech):
             raise MapFormatError(f"AI route {path['label']} overlaps a supply/tech footprint")
     output = table + b''.join(OBJECT_HEADER.pack(i, v, len(d)) + d for i, v, d, _ in chunks)
-    return output, {'title': 'Amber Canyon — 5 vs 5', 'teams': [1] * 5 + [2] * 5,
+    return output, {'title': 'Amber Canyon — 5 vs 5', 'style': style,
+                    'visual_changes': ('layered sandstone wash, rocky foothill texture, extra cliff-top rock clusters'
+                                       if detail_v5 else 'baseline v4'),
+                    'teams': [1] * 5 + [2] * 5,
         'starts': starts, 'supplies': supplies, 'tech': tech, 'passes': PASSES,
         'roads': roads, 'ai_paths': ai_paths, 'waypoint_links': len(links),
         'ai_path_direction': 'inbound toward the base whose start number labels the path',
@@ -279,10 +302,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('source', type=Path)
     parser.add_argument('output', type=Path)
+    parser.add_argument('--style', choices=('v4', 'v5'), default='v4',
+                        help='v5 repaints audited terrain without changing cliff collision or roads')
     args = parser.parse_args()
     if args.source.resolve() == args.output.resolve() or args.output.exists():
         parser.error('Refusing to overwrite a map')
-    data, report = build(args.source.read_bytes())
+    data, report = build(args.source.read_bytes(), args.style)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(data)
     report['format'] = inspect_map(args.output)

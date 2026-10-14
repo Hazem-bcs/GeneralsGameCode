@@ -3930,6 +3930,58 @@ void GameLogic::update()
 	if (!m_startNewGame)
 	{
         m_frame++;
+#if RTS_ZEROHOUR
+        // Opt-in local test of the *player-source* ground-move dispatch path.
+        // This is equivalent to GameLogic::onDoMoveto's groupMoveToPosition(),
+        // but does not claim that X11 mouse/UI selection was exercised.
+        // Never enable it for the owner's actual match or any network session.
+        if (g_localHumanMoveTest && g_localSkirmishPlayers == 10 &&
+            TheNetwork == nullptr && m_gameMode == GAME_SKIRMISH &&
+            (m_frame == 12600 || m_frame == 23400 || m_frame % 900 == 0))
+        {
+            Player *human = ThePlayerList->getPlayerFromSlotIndex(0);
+            Object *dozer = nullptr;
+            for (Object *obj = m_objList; obj; obj = obj->getNextObject())
+            {
+                if (human && obj->getControllingPlayer() == human &&
+                    obj->isKindOf(KINDOF_DOZER) && obj->isKindOf(KINDOF_VEHICLE) &&
+                    !obj->isKindOf(KINDOF_AIRCRAFT) && !obj->isKindOf(KINDOF_STRUCTURE))
+                {
+                    dozer = obj;
+                    break;
+                }
+            }
+            if (dozer)
+            {
+                if (m_frame == 12600 || m_frame == 23400)
+                {
+                    // Start 1 on Amber Canyon is the graded west pad at (900,700).
+                    // Targets stay on its access road, clear of neutral structures.
+                    Coord3D dest = *dozer->getPosition();
+                    dest.x = (m_frame == 12600) ? 1600.0f : 900.0f;
+                    dest.y = (m_frame == 12600) ? 720.0f : 800.0f;
+                    fprintf(stderr, "LOCAL_HUMAN_MOVE_ISSUE frame=%u id=%u x=%.1f y=%.1f tx=%.1f ty=%.1f source=CMD_FROM_PLAYER\n",
+                        m_frame, dozer->getID(), dozer->getPosition()->x, dozer->getPosition()->y, dest.x, dest.y);
+                    AIGroupPtr group = TheAI->createGroup();
+                    if (group)
+                    {
+                        group->add(dozer);
+                        group->groupMoveToPosition(&dest, FALSE, CMD_FROM_PLAYER);
+#if !RETAIL_COMPATIBLE_AIGROUP
+                        group->removeAll();
+#else
+                        TheAI->destroyGroup(group);
+#endif
+                    }
+                }
+                if (m_frame % 900 == 0)
+                    fprintf(stderr, "LOCAL_HUMAN_MOVE_POSITION frame=%u id=%u x=%.1f y=%.1f\n",
+                        m_frame, dozer->getID(), dozer->getPosition()->x, dozer->getPosition()->y);
+            }
+            else if (m_frame == 12600 || m_frame == 23400)
+                fprintf(stderr, "LOCAL_HUMAN_MOVE_MISSING frame=%u\n", m_frame);
+        }
+#endif
         if (g_localSkirmishPlayers > 0 && TheGameInfo && m_gameMode == GAME_SKIRMISH &&
             (m_frame == 150 || (m_frame <= 36000 && m_frame % 900 == 0)))
         {

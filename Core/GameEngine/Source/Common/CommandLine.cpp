@@ -67,6 +67,13 @@ Bool g_localSkirmishFiveAside = FALSE;
 Bool g_localSkirmishHardAI = FALSE;
 Int g_localSkirmishTestFPS = 30;
 Int g_localSkirmishTestCash = 0;
+Bool g_localHumanMoveTest = FALSE;
+
+static Int parseLocalHumanMoveTest(char *args[], int num)
+{
+    g_localHumanMoveTest = TRUE;
+    return 1;
+}
 
 static Int parseLocalSkirmishTestCash(char *args[], int num)
 {
@@ -1258,6 +1265,7 @@ static CommandLineParam paramsForEngineInit[] =
 	{ "-localhardai", parseLocalHardAI },
 	{ "-localskirmishtestfps", parseLocalSkirmishTestFPS },
 	{ "-localskirmishtestcash", parseLocalSkirmishTestCash },
+	{ "-localhumanmovetest", parseLocalHumanMoveTest },
 #endif
 	{ "-noShellAnim", parseNoWindowAnimation }, // TheSuperHackers @tweak Is now available in Release builds.
 	{ "-xres", parseXRes },

@@ -1,0 +1,508 @@
+{
+  "source_commit": "a95f2cd1ea4e86af39ea46272fe5c8b4bb572935",
+  "date": "2026-10-14",
+  "notes": [
+    "20 minutes corresponds to 36,000 simulated game frames (30 base frames/sec); it does not imply 20 wall-clock minutes.",
+    "All engine gameplay was automated in a private headless Wine prefix; manual mouse gameplay not validated.",
+    "Each 10-player run was isolated from the owner's main wineprefix.",
+    "Tests intentionally terminated once sufficient frames and checks completed; exit code 143 does not indicate crash.",
+    "No proprietary assets or binaries are distributed with this report."
+  ],
+  "runs": {
+    "tenbases_20m": {
+      "private_log_path": "/home/hazem/projects/generals-extended-tests/groundfix-tenbases-long-20261014.log",
+      "sha256": "8290e1096acfbc4f5bdf63583f1253a4e5bcdedbc3da1e20a40d8b0b5ed2f5a0",
+      "game_frames": 36000,
+      "minutes": 20.0,
+      "slot_ai_controller_checks_passed": true,
+      "all_nine_ai_economy_expansion_battle_verified": true,
+      "five_aside": false,
+      "hard_ai": false,
+      "path_capacity": 375084,
+      "minimum_free_records": 367812,
+      "allocation_failures": 0,
+      "late_moving_combat_ai_slots": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "late_ground_displacements": 764,
+      "last_minute_displacements": 85,
+      "per_slot_latest": [
+        {
+          "slot": 1,
+          "faction": 3,
+          "units_built": 72,
+          "kills": 46,
+          "frontline_units": 6,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 2,
+          "faction": 7,
+          "units_built": 48,
+          "kills": 44,
+          "frontline_units": 3,
+          "supply_centers": 2,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 3,
+          "faction": 6,
+          "units_built": 52,
+          "kills": 66,
+          "frontline_units": 0,
+          "supply_centers": 2,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 4,
+          "faction": 10,
+          "units_built": 76,
+          "kills": 77,
+          "frontline_units": 0,
+          "supply_centers": 2,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 5,
+          "faction": 12,
+          "units_built": 40,
+          "kills": 44,
+          "frontline_units": 0,
+          "supply_centers": 2,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 6,
+          "faction": 11,
+          "units_built": 108,
+          "kills": 20,
+          "frontline_units": 0,
+          "supply_centers": 2,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 7,
+          "faction": 2,
+          "units_built": 43,
+          "kills": 36,
+          "frontline_units": 0,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 8,
+          "faction": 9,
+          "units_built": 36,
+          "kills": 27,
+          "frontline_units": 0,
+          "supply_centers": 2,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 9,
+          "faction": 7,
+          "units_built": 51,
+          "kills": 65,
+          "frontline_units": 0,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        }
+      ]
+    },
+    "amber_v4_20m": {
+      "private_log_path": "/home/hazem/projects/generals-extended-tests/groundfix-amber-long-20261014.log",
+      "sha256": "7684fc87ca4b674989b20a83c0f06d5d2263c98bb29330ea13e99d390d295744",
+      "game_frames": 36000,
+      "minutes": 20.0,
+      "slot_ai_controller_checks_passed": true,
+      "all_nine_ai_economy_expansion_battle_verified": true,
+      "five_aside": true,
+      "hard_ai": true,
+      "path_capacity": 375084,
+      "minimum_free_records": 353755,
+      "allocation_failures": 0,
+      "late_moving_combat_ai_slots": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "late_ground_displacements": 2850,
+      "last_minute_displacements": 264,
+      "per_slot_latest": [
+        {
+          "slot": 1,
+          "faction": 3,
+          "units_built": 155,
+          "kills": 55,
+          "frontline_units": 0,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 2,
+          "faction": 7,
+          "units_built": 79,
+          "kills": 25,
+          "frontline_units": 1,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 3,
+          "faction": 6,
+          "units_built": 92,
+          "kills": 143,
+          "frontline_units": 2,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 4,
+          "faction": 10,
+          "units_built": 118,
+          "kills": 18,
+          "frontline_units": 0,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 5,
+          "faction": 12,
+          "units_built": 179,
+          "kills": 7,
+          "frontline_units": 0,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 6,
+          "faction": 11,
+          "units_built": 218,
+          "kills": 19,
+          "frontline_units": 0,
+          "supply_centers": 4,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 7,
+          "faction": 2,
+          "units_built": 126,
+          "kills": 9,
+          "frontline_units": 1,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 8,
+          "faction": 9,
+          "units_built": 297,
+          "kills": 21,
+          "frontline_units": 51,
+          "supply_centers": 5,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 9,
+          "faction": 7,
+          "units_built": 60,
+          "kills": 5,
+          "frontline_units": 1,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        }
+      ]
+    },
+    "amber_v5_20m": {
+      "private_log_path": "/home/hazem/projects/generals-extended-tests/groundfix-amber-v5-long-20261014.log",
+      "sha256": "c8baca981d802afd63076c0b1de7bb156b282bb05ccbb1a0c76f0f209f960f18",
+      "game_frames": 36000,
+      "minutes": 20.0,
+      "slot_ai_controller_checks_passed": true,
+      "all_nine_ai_economy_expansion_battle_verified": true,
+      "five_aside": true,
+      "hard_ai": true,
+      "path_capacity": 375084,
+      "minimum_free_records": 352869,
+      "allocation_failures": 0,
+      "late_moving_combat_ai_slots": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "late_ground_displacements": 2687,
+      "last_minute_displacements": 279,
+      "per_slot_latest": [
+        {
+          "slot": 1,
+          "faction": 3,
+          "units_built": 155,
+          "kills": 26,
+          "frontline_units": 0,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 2,
+          "faction": 7,
+          "units_built": 74,
+          "kills": 48,
+          "frontline_units": 0,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 3,
+          "faction": 6,
+          "units_built": 95,
+          "kills": 139,
+          "frontline_units": 0,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 4,
+          "faction": 10,
+          "units_built": 125,
+          "kills": 16,
+          "frontline_units": 0,
+          "supply_centers": 4,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 5,
+          "faction": 12,
+          "units_built": 181,
+          "kills": 8,
+          "frontline_units": 0,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 6,
+          "faction": 11,
+          "units_built": 220,
+          "kills": 7,
+          "frontline_units": 1,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 7,
+          "faction": 2,
+          "units_built": 109,
+          "kills": 12,
+          "frontline_units": 0,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 8,
+          "faction": 9,
+          "units_built": 308,
+          "kills": 39,
+          "frontline_units": 22,
+          "supply_centers": 4,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 9,
+          "faction": 7,
+          "units_built": 65,
+          "kills": 0,
+          "frontline_units": 1,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        }
+      ]
+    },
+    "amber_v5_human_orders_20m": {
+      "private_log_path": "/home/hazem/projects/generals-extended-tests/human-ground-command-qa-20261014.log",
+      "sha256": "4807c0d1815cad431214734d3b33121a41d6cc9e2df28397a32a964e84f1cb8a",
+      "game_frames": 36000,
+      "minutes": 20.0,
+      "slot_ai_controller_checks_passed": true,
+      "all_nine_ai_economy_expansion_battle_verified": true,
+      "five_aside": true,
+      "hard_ai": true,
+      "path_capacity": 375084,
+      "minimum_free_records": 353528,
+      "allocation_failures": 0,
+      "late_moving_combat_ai_slots": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "late_ground_displacements": 2548,
+      "last_minute_displacements": 212,
+      "per_slot_latest": [
+        {
+          "slot": 1,
+          "faction": 3,
+          "units_built": 172,
+          "kills": 18,
+          "frontline_units": 6,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 2,
+          "faction": 7,
+          "units_built": 74,
+          "kills": 32,
+          "frontline_units": 0,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 3,
+          "faction": 6,
+          "units_built": 95,
+          "kills": 101,
+          "frontline_units": 0,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 4,
+          "faction": 10,
+          "units_built": 125,
+          "kills": 15,
+          "frontline_units": 1,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 5,
+          "faction": 12,
+          "units_built": 181,
+          "kills": 6,
+          "frontline_units": 1,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 6,
+          "faction": 11,
+          "units_built": 222,
+          "kills": 3,
+          "frontline_units": 2,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 7,
+          "faction": 2,
+          "units_built": 100,
+          "kills": 11,
+          "frontline_units": 0,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 8,
+          "faction": 9,
+          "units_built": 308,
+          "kills": 44,
+          "frontline_units": 52,
+          "supply_centers": 4,
+          "tech_buildings": 0
+        },
+        {
+          "slot": 9,
+          "faction": 7,
+          "units_built": 65,
+          "kills": 0,
+          "frontline_units": 1,
+          "supply_centers": 3,
+          "tech_buildings": 0
+        }
+      ],
+      "player_source_dozer_orders": {
+        "last_frame": 36000,
+        "minimum_free": 353528,
+        "allocation_failures": 0,
+        "real_human_vehicle_order_tests": [
+          {
+            "command_frame": 12600,
+            "id": 266,
+            "target": [
+              1600.0,
+              720.0
+            ],
+            "max_actual_displacement": 765.8,
+            "last_observed_frame": 23400
+          },
+          {
+            "command_frame": 23400,
+            "id": 266,
+            "target": [
+              900.0,
+              800.0
+            ],
+            "max_actual_displacement": 693.1,
+            "last_observed_frame": 36000
+          }
+        ],
+        "mouse_ui_click_tested": false
+      }
+    }
+  },
+  "legacy_eight": {
+    "private_log_path": "/home/hazem/projects/generals-extended-tests/groundfix-legacy-eight-regression-20261014.log",
+    "sha256": "0cded4dfbe9f5b97b51ee1b9db3adb5b8c4dc15d9161526b03c66afe03162c5d",
+    "max_frame": 11700,
+    "all_slot_checks_passed": true,
+    "path_capacity": 30000,
+    "minimum_free": 21965,
+    "allocation_failures": 0
+  },
+  "private_files": {
+    "ground_fixed_baseline_exe": {
+      "path": "/home/hazem/projects/generals-extended-tests/runtime/ZeroHour/generalszh-ground-fix-final.exe",
+      "sha256": "c59281662f436d271e74460b44b51ac7f3541213d771612a43d28023245c5e0f"
+    },
+    "ground_fixed_human_qa_exe": {
+      "path": "/home/hazem/projects/generals-extended-tests/runtime/ZeroHour/generalszh-ground-fix-human-qa.exe",
+      "sha256": "1be253fa8c8767dd017405db647fb0395c2e17e03f078dc8d30a75a2af4b2c45"
+    },
+    "validated_owner_exe": {
+      "path": "/home/hazem/projects/generals-extended-tests/runtime/ZeroHour/generalszh-ten-validated-20261014.exe",
+      "sha256": "1be253fa8c8767dd017405db647fb0395c2e17e03f078dc8d30a75a2af4b2c45"
+    },
+    "amber_v5_map": {
+      "path": "/home/hazem/projects/generals-extended-tests/maps/AmberCanyon_5v5_v5/AmberCanyon_5v5_v5.map",
+      "sha256": "3f60067137789912739bed92b80835dd41bcfe967aa8d53f385abd6e8465009a"
+    },
+    "amber_v4_map": {
+      "path": "/home/hazem/projects/generals-extended-tests/maps/AmberCanyon_5v5_v4/AmberCanyon_5v5_v4.map",
+      "sha256": "3bf06fdd17d8a57222f2520a9ea7f9bd1ada19abb3e9e1a95a891f368b44f7a1"
+    }
+  }
+}

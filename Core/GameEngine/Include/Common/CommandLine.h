@@ -47,5 +47,7 @@ public:
 extern AsciiString g_localSkirmishMap;
 extern Int g_localSkirmishPlayers;
 extern Bool g_localSkirmishSetup;
+// Opt-in isolated QA; no effect on normal or network matches.
+extern Bool g_localHumanMoveTest;
 void configureLocalSkirmish();
 #endif
