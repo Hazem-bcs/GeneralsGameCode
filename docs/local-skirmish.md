@@ -71,3 +71,15 @@ its save/load cycle and its replay. Check ten setup/diplomacy entries, distinct
 starts/colors, ordinary eight-player behavior and continued ground movement.
 Frame time and simulation speed require separate measurement. Refactoring does
 not establish that late-match performance is fixed.
+
+### Cleanup validation, 2026-10-14
+
+- Both VC6 release targets (`z_generals`, `g_generals`) build successfully.
+- Private layout generation produces the expected ten controls per category,
+  preserves all four input files, and rejects overwriting existing outputs.
+- The ordinary Zero Hour UI displays ten player rows and all ten start markers
+  on a ten-player map. A new complete match/save/load/replay cycle is still open.
+- A retained legacy replay fails its CRC at frame 2913 with both this build and
+  the preserved pre-ten-player executable in the same isolated Wine environment.
+  This is a failed compatibility check, not a claimed passing regression test.
+- No runtime performance improvement is claimed by this cleanup.
