@@ -27,6 +27,9 @@ def parse_log(text):
     for line in text.splitlines():
         if line.startswith("LOCAL_SKIRMISH frame="):
             header = parse_fields(line)
+            # Wine map paths contain spaces; generic key-value token parsing truncates them.
+            if " map=" in line:
+                header["map"] = line.split(" map=", 1)[1].strip()
             frame = int(header["frame"])
             run.headers.append(header)
         elif line.startswith("LOCAL_SKIRMISH slot=") and frame is not None:
