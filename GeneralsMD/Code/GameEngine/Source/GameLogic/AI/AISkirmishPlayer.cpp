@@ -55,6 +55,8 @@
 #include "GameLogic/ScriptEngine.h"
 #include "GameLogic/Module/ProductionUpdate.h"
 #include "GameClient/TerrainVisual.h"
+#include "GameNetwork/GameInfo.h"
+#include "GameNetwork/NetworkInterface.h"
 
 
 #define USE_DOZER 1
@@ -955,6 +957,32 @@ void AISkirmishPlayer::doTeamBuilding()
 void AISkirmishPlayer::update()
 {
 	AIPlayer::update();
+
+	// Retail map scripts only budget for their original supply sites. Extended
+	// local maps also need a bounded expansion budget using the normal builder.
+	if (TheNetwork || TheGameLogic->getGameMode() != GAME_SKIRMISH ||
+		!TheGameInfo || TheGameInfo->getNumPlayers() <= MAX_SLOTS || !m_player->getCanBuildBase()) return;
+	UnsignedInt frame = TheGameLogic->getFrame();
+	if (frame < 120 * LOGICFRAMES_PER_SECOND ||
+		(frame + m_player->getPlayerIndex() * LOGICFRAMES_PER_SECOND) % (30 * LOGICFRAMES_PER_SECOND)) return;
+
+	const ThingTemplate *supplyTemplate = nullptr;
+	Int centers = 0;
+	for (Object *obj = TheGameLogic->getFirstObject(); obj; obj = obj->getNextObject()) {
+		if (obj->getControllingPlayer() != m_player || !obj->isKindOf(KINDOF_FS_SUPPLY_CENTER)) continue;
+		if (obj->testStatus(OBJECT_STATUS_UNDER_CONSTRUCTION)) return;
+		++centers;
+		supplyTemplate = obj->getTemplate();
+	}
+	if (!supplyTemplate || centers >= 3 ||
+		m_player->getMoney()->countMoney() < supplyTemplate->calcCostToBuild(m_player) + 3000) return;
+	// Do not enqueue the same expansion while a dozer/worker is travelling.
+	for (BuildListInfo *info = m_player->getBuildList(); info; info = info->getNext()) {
+		const ThingTemplate *pending = TheThingFactory->findTemplate(info->getTemplateName());
+		if (pending && pending->isKindOf(KINDOF_FS_SUPPLY_CENTER) && info->isBuildable() &&
+			!TheGameLogic->findObjectByID(info->getObjectID())) return;
+	}
+	buildBySupplies(5000, supplyTemplate->getName());
 }
 
 //----------------------------------------------------------------------------------------------------------
@@ -1234,4 +1262,3 @@ void AISkirmishPlayer::loadPostProcess()
 {
 
 }
-

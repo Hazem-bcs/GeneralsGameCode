@@ -44,6 +44,8 @@ class MapMetaDataReader
 public:
 	Region3D m_extent;
 	Int m_numPlayers;
+	Int m_startSpotCapacity;
+	MapMetaDataReader() : m_startSpotCapacity(MAX_SLOTS) {}
 	Bool m_isMultiplayer;
 	AsciiString m_asciiDisplayName;
 	AsciiString m_asciiNameLookupTag;
@@ -53,7 +55,7 @@ public:
 	UnsignedInt m_filesize;
 	UnsignedInt m_CRC;
 
-	Coord3D m_waypoints[MAX_SLOTS];
+	Coord3D m_waypoints[MAX_SKIRMISH_SLOTS];
 	Coord3D m_initialCameraPosition;
 	Coord3DList m_supplyPositions;
 	Coord3DList m_techPositions;
@@ -88,6 +90,7 @@ const FieldParse MapMetaDataReader::m_mapFieldParseTable[] =
 	{ "extentMin",							INI::parseCoord3D,	nullptr, offsetof( MapMetaDataReader, m_extent.lo ) },
 	{ "extentMax",							INI::parseCoord3D,	nullptr, offsetof( MapMetaDataReader, m_extent.hi ) },
 	{ "numPlayers",							INI::parseInt,			nullptr,	offsetof( MapMetaDataReader, m_numPlayers ) },
+	{ "StartSpotCapacity", INI::parseInt, nullptr, offsetof(MapMetaDataReader, m_startSpotCapacity) },
 	{ "fileSize",								INI::parseUnsignedInt,	nullptr,	offsetof( MapMetaDataReader, m_filesize ) },
 	{ "fileCRC",								INI::parseUnsignedInt,	nullptr,	offsetof( MapMetaDataReader, m_CRC ) },
 	{ "timestampLo",						INI::parseInt,			nullptr,	offsetof( MapMetaDataReader, m_timestamp.m_lowTimeStamp ) },
@@ -106,6 +109,10 @@ const FieldParse MapMetaDataReader::m_mapFieldParseTable[] =
 	{ "Player_6_Start",					INI::parseCoord3D,	nullptr,	offsetof( MapMetaDataReader, m_waypoints ) + sizeof(Coord3D) * 5 },
 	{ "Player_7_Start",					INI::parseCoord3D,	nullptr,	offsetof( MapMetaDataReader, m_waypoints ) + sizeof(Coord3D) * 6 },
 	{ "Player_8_Start",					INI::parseCoord3D,	nullptr,	offsetof( MapMetaDataReader, m_waypoints ) + sizeof(Coord3D) * 7 },
+#if RTS_ZEROHOUR
+	{ "Player_9_Start",   INI::parseCoord3D, nullptr, offsetof(MapMetaDataReader, m_waypoints) + sizeof(Coord3D) * 8 },
+	{ "Player_10_Start",  INI::parseCoord3D, nullptr, offsetof(MapMetaDataReader, m_waypoints) + sizeof(Coord3D) * 9 },
+#endif
 
 	{ "InitialCameraPosition",	INI::parseCoord3D,	nullptr,	offsetof( MapMetaDataReader, m_initialCameraPosition ) },
 
@@ -132,7 +139,8 @@ void INI::parseMapCacheDefinition( INI* ini )
 	md.m_isOfficial = mdr.m_isOfficial != 0;
 	md.m_doesExist = TRUE;
 	md.m_isMultiplayer = mdr.m_isMultiplayer != 0;
-	md.m_numPlayers = mdr.m_numPlayers;
+	md.m_numPlayers = min(mdr.m_numPlayers, MAX_SKIRMISH_SLOTS);
+	md.m_startSpotCapacity = mdr.m_startSpotCapacity;
 	md.m_filesize = mdr.m_filesize;
 	md.m_CRC = mdr.m_CRC;
 	md.m_timestamp = mdr.m_timestamp;
@@ -171,7 +179,7 @@ void INI::parseMapCacheDefinition( INI* ini )
 #endif
 
 	AsciiString startingCamName;
-	for (Int i=0; i<md.m_numPlayers; ++i)
+	for (Int i=0; i<md.m_numPlayers && i<MAX_SKIRMISH_SLOTS; ++i)
 	{
 		startingCamName.format("Player_%d_Start", i+1); // start pos waypoints are 1-based
 		md.m_waypoints[startingCamName] = mdr.m_waypoints[i];

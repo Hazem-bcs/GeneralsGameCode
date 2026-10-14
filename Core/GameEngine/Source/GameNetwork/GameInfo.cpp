@@ -93,7 +93,8 @@ void GameSlot::saveOriginalSetup()
 
 static Int getSlotIndex(const GameSlot *slot)
 {
-	for (Int i=0; i<MAX_SLOTS; ++i)
+	if (!TheGameInfo) return -1;
+	for (Int i=0; i<TheGameInfo->getSlotCount(); ++i)
 	{
 		if (TheGameInfo->getConstSlot(i) == slot)
 			return i;
@@ -105,11 +106,11 @@ static Bool isSlotLocalAlly(const GameSlot *slot)
 {
 	Int slotIndex = getSlotIndex(slot);
 	Int localIndex = TheGameInfo->getLocalSlotNum();
-	const GameSlot *localSlot = TheGameInfo->getConstSlot(localIndex);
 
 	// if either doesn't exist, not an ally
 	if (slotIndex < 0 || localIndex < 0)
 		return FALSE;
+	const GameSlot *localSlot = TheGameInfo->getConstSlot(localIndex);
 
 	// if slot is us, ally
 	if (slotIndex == localIndex)
@@ -288,7 +289,7 @@ Bool GameSlot::isOpen() const
 
 GameInfo::GameInfo()
 {
-	for (int i=0; i<MAX_SLOTS; ++i)
+	for (int i=0; i<MAX_SKIRMISH_SLOTS; ++i)
 	{
 		m_slot[i] = nullptr;
 	}
@@ -327,7 +328,7 @@ void GameInfo::reset()
   m_superweaponRestriction = 0;
   m_startingCash = TheGlobalData->m_defaultStartingCash;
 
-	for (Int i=0; i<MAX_SLOTS; ++i)
+	for (Int i=0; i<getSlotCount(); ++i)
 	{
 		if (m_slot[i])
 			m_slot[i]->reset();
@@ -338,21 +339,21 @@ void GameInfo::reset()
 
 Bool GameInfo::isPlayerPreorder(Int index)
 {
-	if (index >= 0 && index < MAX_SLOTS)
+	if (index >= 0 && index < getSlotCount())
 		return ((m_preorderMask & (1 << index)) != 0);
 	return FALSE;
 }
 
 void GameInfo::markPlayerAsPreorder(Int index)
 {
-	if (index >= 0 && index < MAX_SLOTS)
+	if (index >= 0 && index < getSlotCount())
 		m_preorderMask |= 1 << index;
 }
 
 
 void GameInfo::clearSlotList()
 {
-	for (int i=0; i<MAX_SLOTS; ++i)
+	for (int i=0; i<getSlotCount(); ++i)
 	{
 		if (m_slot[i])
 			m_slot[i]->setState(SLOT_CLOSED);
@@ -362,7 +363,7 @@ void GameInfo::clearSlotList()
 Int GameInfo::getNumPlayers() const
 {
 	Int numPlayers = 0;
-	for (int i=0; i<MAX_SLOTS; ++i)
+	for (int i=0; i<getSlotCount(); ++i)
 	{
 		if (m_slot[i] && m_slot[i]->isOccupied())
 			numPlayers++;
@@ -373,7 +374,7 @@ Int GameInfo::getNumPlayers() const
 Int GameInfo::getNumNonObserverPlayers() const
 {
 	Int numPlayers = 0;
-	for (int i=0; i<MAX_SLOTS; ++i)
+	for (int i=0; i<getSlotCount(); ++i)
 	{
 		if (m_slot[i] && m_slot[i]->isOccupied() && m_slot[i]->getPlayerTemplate() != PLAYERTEMPLATE_OBSERVER)
 			numPlayers++;
@@ -392,7 +393,7 @@ Int GameInfo::getMaxPlayers() const
 	if (it == TheMapCache->end())
 		return -1;
 	MapMetaData data = it->second;
-	return data.m_numPlayers;
+	return min(data.m_numPlayers, getSlotCount());
 }
 
 void GameInfo::enterGame()
@@ -426,8 +427,8 @@ void GameInfo::endGame()
 
 void GameInfo::setSlot( Int slotNum, GameSlot slotInfo )
 {
-	DEBUG_ASSERTCRASH( slotNum >= 0 && slotNum < MAX_SLOTS, ("GameInfo::setSlot - Invalid slot number"));
-	if (slotNum < 0 || slotNum >= MAX_SLOTS)
+	DEBUG_ASSERTCRASH( slotNum >= 0 && slotNum < getSlotCount(), ("GameInfo::setSlot - Invalid slot number"));
+	if (slotNum < 0 || slotNum >= getSlotCount())
 		return;
 
 	DEBUG_ASSERTCRASH( m_slot[slotNum], ("null slot pointer"));
@@ -454,8 +455,8 @@ void GameInfo::setSlot( Int slotNum, GameSlot slotInfo )
 
 GameSlot* GameInfo::getSlot( Int slotNum )
 {
-	DEBUG_ASSERTCRASH( slotNum >= 0 && slotNum < MAX_SLOTS, ("GameInfo::getSlot - Invalid slot number"));
-	if (slotNum < 0 || slotNum >= MAX_SLOTS)
+	DEBUG_ASSERTCRASH( slotNum >= 0 && slotNum < getSlotCount(), ("GameInfo::getSlot - Invalid slot number"));
+	if (slotNum < 0 || slotNum >= getSlotCount())
 		return nullptr;
 
 	DEBUG_ASSERTCRASH( m_slot[slotNum], ("null slot pointer") );
@@ -464,8 +465,8 @@ GameSlot* GameInfo::getSlot( Int slotNum )
 
 const GameSlot* GameInfo::getConstSlot( Int slotNum ) const
 {
-	DEBUG_ASSERTCRASH( slotNum >= 0 && slotNum < MAX_SLOTS, ("GameInfo::getSlot - Invalid slot number"));
-	if (slotNum < 0 || slotNum >= MAX_SLOTS)
+	DEBUG_ASSERTCRASH( slotNum >= 0 && slotNum < getSlotCount(), ("GameInfo::getSlot - Invalid slot number"));
+	if (slotNum < 0 || slotNum >= getSlotCount())
 		return nullptr;
 
 	DEBUG_ASSERTCRASH( m_slot[slotNum], ("null slot pointer") );
@@ -478,7 +479,7 @@ Int GameInfo::getLocalSlotNum() const
 	if (!m_inGame)
 		return -1;
 
-	for (Int i=0; i<MAX_SLOTS; ++i)
+	for (Int i=0; i<getSlotCount(); ++i)
 	{
 		const GameSlot *slot = getConstSlot(i);
 		if (slot == nullptr) {
@@ -498,7 +499,7 @@ Int GameInfo::getSlotNum( AsciiString userName ) const
 
 	UnicodeString uName;
 	uName.translate(userName);
-	for (Int i=0; i<MAX_SLOTS; ++i)
+	for (Int i=0; i<getSlotCount(); ++i)
 	{
 		const GameSlot *slot = getConstSlot(i);
 		if (slot->isPlayer( uName ))
@@ -697,7 +698,7 @@ void GameInfo::setSeed( Int seed )
 
 void GameInfo::setSlotPointer( Int index, GameSlot *slot )
 {
-	if (index < 0 || index >= MAX_SLOTS)
+	if (index < 0 || index >= getSlotCount())
 		return;
 
 	m_slot[index] = slot;
@@ -715,7 +716,7 @@ void GameInfo::setStartingCash( const Money & startingCash )
 
 Bool GameInfo::isColorTaken(Int colorIdx, Int slotToIgnore ) const
 {
-	for (Int i=0; i<MAX_SLOTS; ++i)
+	for (Int i=0; i<getSlotCount(); ++i)
 	{
 		const GameSlot *slot = getConstSlot(i);
 		if (slot && slot->getColor() == colorIdx && i != slotToIgnore)
@@ -726,7 +727,7 @@ Bool GameInfo::isColorTaken(Int colorIdx, Int slotToIgnore ) const
 
 Bool GameInfo::isStartPositionTaken(Int positionIdx, Int slotToIgnore ) const
 {
-	for (Int i=0; i<MAX_SLOTS; ++i)
+	for (Int i=0; i<getSlotCount(); ++i)
 	{
 		const GameSlot *slot = getConstSlot(i);
 		if (slot && slot->getStartPos() == positionIdx && i != slotToIgnore)
@@ -740,7 +741,7 @@ void GameInfo::resetAccepted()
 	GameSlot *slot = getSlot(0);
 	if (slot)
 		slot->setAccept();
-	for(int i = 1; i< MAX_SLOTS; i++)
+	for(int i = 1; i< getSlotCount(); i++)
 	{
 		slot = getSlot(i);
 		if (slot)
@@ -751,7 +752,7 @@ void GameInfo::resetAccepted()
 void GameInfo::resetStartSpots()
 {
 	GameSlot *slot = nullptr;
-	for (Int i = 0; i < MAX_SLOTS; ++i)
+	for (Int i = 0; i < getSlotCount(); ++i)
 	{
 		slot = getSlot(i);
 		if (slot != nullptr)
@@ -775,7 +776,7 @@ void GameInfo::adjustSlotsForMap()
 
 		// first get the number of occupied slots.
 		Int i = 0;
-		for (; i < MAX_SLOTS; ++i)
+		for (; i < getSlotCount(); ++i)
 		{
 			GameSlot *tempSlot = getSlot(i);
 			if (tempSlot->isOccupied())
@@ -787,7 +788,7 @@ void GameInfo::adjustSlotsForMap()
 		// now go through and close the appropriate number of slots.
 		// note that no players are kicked in this process, we leave
 		// that up to the user.
-		for (i = 0; i < MAX_SLOTS; ++i)
+		for (i = 0; i < getSlotCount(); ++i)
 		{
 			// we have room for more players, if this slot is unoccupied, set it to open.
 			GameSlot *slot = getSlot(i);
@@ -817,7 +818,7 @@ void GameInfo::adjustSlotsForMap()
 
 void GameInfo::closeOpenSlots()
 {
-	for (Int i = 0; i < MAX_SLOTS; ++i)
+	for (Int i = 0; i < getSlotCount(); ++i)
 	{
 		GameSlot *slot = getSlot(i);
 		if (!(slot->isOccupied()))
@@ -848,7 +849,7 @@ Bool GameInfo::isSkirmish()
 {
 	Bool sawAI = FALSE;
 
-	for (Int i=0; i<MAX_SLOTS; ++i)
+	for (Int i=0; i<getSlotCount(); ++i)
 	{
 		if (i == getLocalSlotNum())
 			continue;
@@ -868,7 +869,7 @@ Bool GameInfo::isSkirmish()
 
 Bool GameInfo::isMultiPlayer()
 {
-	for (Int i=0; i<MAX_SLOTS; ++i)
+	for (Int i=0; i<getSlotCount(); ++i)
 	{
 		if (i == getLocalSlotNum())
 			continue;
@@ -884,7 +885,7 @@ Bool GameInfo::isSandbox()
 {
 	Int localSlotNum = getLocalSlotNum();
 	Int localTeam = getConstSlot(localSlotNum)->getTeamNumber();
-	for (Int i=0; i<MAX_SLOTS; ++i)
+	for (Int i=0; i<getSlotCount(); ++i)
 	{
 		if (i == localSlotNum)
 			continue;
@@ -922,14 +923,14 @@ static Int getMinPlayerNameLength(const AsciiString& name)
 	return 0;
 }
 
-static Bool truncatePlayerNames(const GameInfo& game, AsciiString playerNames[MAX_SLOTS], Int maxPlayerNamesLength)
+static Bool truncatePlayerNames(const GameInfo& game, AsciiString playerNames[MAX_SKIRMISH_SLOTS], Int maxPlayerNamesLength)
 {
-	Int minLengths[MAX_SLOTS] = { 0 };
+	Int minLengths[MAX_SKIRMISH_SLOTS] = { 0 };
 	Int minTotalLength = 0;
 	Int playerCount = 0;
 	Int i;
 
-	for (i = 0; i < MAX_SLOTS; ++i)
+	for (i = 0; i < game.getSlotCount(); ++i)
 	{
 		const GameSlot *slot = game.getConstSlot(i);
 		if (slot && slot->isHuman())
@@ -951,7 +952,7 @@ static Bool truncatePlayerNames(const GameInfo& game, AsciiString playerNames[MA
 	}
 
 	Int remainingLength = maxPlayerNamesLength;
-	for (i = 0; i < MAX_SLOTS; ++i)
+	for (i = 0; i < game.getSlotCount(); ++i)
 	{
 		const GameSlot *slot = game.getConstSlot(i);
 		if (slot && slot->isHuman())
@@ -967,7 +968,7 @@ static Bool truncatePlayerNames(const GameInfo& game, AsciiString playerNames[MA
 	return true;
 }
 
-static AsciiString buildGameInfoAsciiString(const GameInfo& game, const AsciiString playerNames[MAX_SLOTS])
+static AsciiString buildGameInfoAsciiString(const GameInfo& game, const AsciiString playerNames[MAX_SKIRMISH_SLOTS])
 {
 	AsciiString mapName = game.getMap();
 	mapName = TheGameState->realMapPathToPortableMapPath(mapName);
@@ -1006,7 +1007,7 @@ static AsciiString buildGameInfoAsciiString(const GameInfo& game, const AsciiStr
 	//add player info for each slot
 	optionsString.concat(slotListID);
 	optionsString.concat('=');
-	for (Int i=0; i<MAX_SLOTS; ++i)
+	for (Int i=0; i<game.getSlotCount(); ++i)
 	{
 		const GameSlot *slot = game.getConstSlot(i);
 
@@ -1064,9 +1065,9 @@ AsciiString GameInfoToAsciiString( const GameInfo *game )
 		return AsciiString::TheEmptyString;
 	}
 
-	AsciiString playerNames[MAX_SLOTS];
+	AsciiString playerNames[MAX_SKIRMISH_SLOTS];
 	Int playerNamesLength = 0;
-	for (Int i = 0; i < MAX_SLOTS; ++i)
+	for (Int i = 0; i < game->getSlotCount(); ++i)
 	{
 		const GameSlot *slot = game->getConstSlot(i);
 		if (slot && slot->isHuman())
@@ -1115,7 +1116,10 @@ Bool ParseAsciiStringToGameInfo(GameInfo *game, AsciiString options)
 	char *buf = strdup(options.str());
 	char *bufPtr = buf;
 	char *strPos, *keyValPair;
-	GameSlot newSlot[MAX_SLOTS];
+	GameSlot newSlot[MAX_SKIRMISH_SLOTS];
+	const Int capacity = game ? game->getSlotCount() : MAX_SLOTS;
+	for (Int i = 0; i < MAX_SKIRMISH_SLOTS; ++i)
+		newSlot[i].setState(SLOT_CLOSED);
 	Bool optionsOk = true;
 	AsciiString mapName;
 	Int mapContentsMask;
@@ -1256,9 +1260,15 @@ Bool ParseAsciiStringToGameInfo(GameInfo *game, AsciiString options)
 //			Bool slotsOk = true;	//flag that lets us know whether or not the slot list is good.
 
 //			DEBUG_LOG(("ParseAsciiStringToGameInfo - Parsing slot list"));
-			for (int i=0; i<MAX_SLOTS; ++i)
+			for (int i=0; i<capacity; ++i)
 				{
 					rawSlot = strtok_r(rawSlotBuf,":",&pos);
+					if (rawSlot.isEmpty())
+					{
+						// Accept legacy eight-slot preferences/replays in a local ten-slot object.
+						if (i != MAX_SLOTS || capacity <= MAX_SLOTS) optionsOk = false;
+						break;
+					}
 					if( rawSlotBuf )
 						freeMe = rawSlotBuf;
 					rawSlotBuf = nullptr;
@@ -1343,7 +1353,7 @@ Bool ParseAsciiStringToGameInfo(GameInfo *game, AsciiString options)
 								break;
 							}
 							Int color = atoi(slotValue.str());
-							if (color < -1 || color >= TheMultiplayerSettings->getNumColors())
+							if (color < -1 || color >= getNumGameColors(game))
 							{
 								optionsOk = false;
 								DEBUG_LOG(("ParseAsciiStringToGameInfo - player color was invalid, quitting"));
@@ -1379,7 +1389,7 @@ Bool ParseAsciiStringToGameInfo(GameInfo *game, AsciiString options)
 								break;
 							}
 							Int startPos = atoi(slotValue.str());
-							if (startPos < -1 || startPos >= MAX_SLOTS)
+							if (startPos < -1 || startPos >= capacity)
 							{
 								optionsOk = false;
 								DEBUG_LOG(("ParseAsciiStringToGameInfo - player start position is invalid, quitting"));
@@ -1397,7 +1407,7 @@ Bool ParseAsciiStringToGameInfo(GameInfo *game, AsciiString options)
 								break;
 							}
 							Int team = atoi(slotValue.str());
-							if (team < -1 || team >= MAX_SLOTS/2)
+							if (team < -1 || team >= capacity/2)
 							{
 								optionsOk = false;
 								DEBUG_LOG(("ParseAsciiStringToGameInfo - team number is invalid, quitting"));
@@ -1475,7 +1485,7 @@ Bool ParseAsciiStringToGameInfo(GameInfo *game, AsciiString options)
 								break;
 							}
 							Int color = atoi(slotValue.str());
-							if (color < -1 || color >= TheMultiplayerSettings->getNumColors())
+							if (color < -1 || color >= getNumGameColors(game))
 							{
 								optionsOk = false;
 								DEBUG_LOG(("ParseAsciiStringToGameInfo - player color was invalid, quitting"));
@@ -1512,13 +1522,13 @@ Bool ParseAsciiStringToGameInfo(GameInfo *game, AsciiString options)
 							}
 							Int startPos = atoi(slotValue.str());
 							Bool isStartPosBad = FALSE;
-							if (startPos < -1 || startPos >= MAX_SLOTS)
+							if (startPos < -1 || startPos >= capacity)
 							{
 								isStartPosBad = TRUE;
 							}
 							for (Int j=0; j<i; ++j)
 							{
-								if (startPos >= 0 && startPos == newSlot[i].getStartPos())
+								if (startPos >= 0 && startPos == newSlot[j].getStartPos())
 								{
 									isStartPosBad = TRUE; // can't have multiple people using the same start pos
 								}
@@ -1541,7 +1551,7 @@ Bool ParseAsciiStringToGameInfo(GameInfo *game, AsciiString options)
 								break;
 							}
 							Int team = atoi(slotValue.str());
-							if (team < -1 || team >= MAX_SLOTS/2)
+							if (team < -1 || team >= capacity/2)
 							{
 								optionsOk = false;
 								DEBUG_LOG(("ParseAsciiStringToGameInfo - team number is invalid, quitting"));
@@ -1573,6 +1583,8 @@ Bool ParseAsciiStringToGameInfo(GameInfo *game, AsciiString options)
 					}
 				}
 
+			if (!rawSlot.isEmpty() && strtok_r(nullptr, ":", &pos) != nullptr)
+				optionsOk = false; // reject slots beyond this object
 			free(freeMe);
 		}
 		else
@@ -1601,7 +1613,7 @@ Bool ParseAsciiStringToGameInfo(GameInfo *game, AsciiString options)
 
 		//DEBUG_LOG(("ParseAsciiStringToGameInfo - game options all good, setting info"));
 
-		for(Int i = 0; i<MAX_SLOTS; i++)
+		for(Int i = 0; i<capacity; i++)
 			game->setSlot(i,newSlot[i]);
 
 		game->setMap(mapName);
@@ -1643,7 +1655,7 @@ void SkirmishGameInfo::xfer( Xfer *xfer )
 #if RTS_GENERALS
 	const XferVersion currentVersion = 2;
 #else
-	const XferVersion currentVersion = 4;
+	const XferVersion currentVersion = 5;
 #endif
 	XferVersion version = currentVersion;
 	xfer->xferVersion( &version, currentVersion );
@@ -1656,11 +1668,14 @@ void SkirmishGameInfo::xfer( Xfer *xfer )
 	xfer->xferBool(&m_surrendered);
 	xfer->xferInt(&m_gameID);
 
-	Int slot = MAX_SLOTS;
-	xfer->xferInt(&slot);
-	DEBUG_ASSERTCRASH(slot==MAX_SLOTS, ("MAX_SLOTS changed, need to change version. jba."));
+	Int savedSlots = getSlotCount();
+	xfer->xferInt(&savedSlots);
+	if (savedSlots < 1 || savedSlots > getSlotCount() || (version < 5 && savedSlots != MAX_SLOTS))
+		throw SC_INVALID_DATA;
+	if (xfer->getXferMode() == XFER_LOAD)
+		for (Int i = savedSlots; i < getSlotCount(); ++i) m_slot[i]->setState(SLOT_CLOSED);
 
-	for (slot = 0; slot < MAX_SLOTS; slot++)
+	for (Int slot = 0; slot < savedSlots; slot++)
 	{
 		Int state = m_slot[slot]->getState();
 		xfer->xferInt(&state);
@@ -1751,3 +1766,12 @@ void SkirmishGameInfo::loadPostProcess()
 {
 }
 
+
+Int getNumGameColors(const GameInfo *game)
+{
+#if RTS_ZEROHOUR
+	if (game && game->getSlotCount() > MAX_SLOTS)
+		return TheMultiplayerSettings->getNumSkirmishColors();
+#endif
+	return TheMultiplayerSettings->getNumColors();
+}

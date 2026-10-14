@@ -28,7 +28,9 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES ////////////////////////////////////////////////////////////
-#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
+#include "PreRTS.h"
+#include "Common/CommandLine.h"
+#include "GameNetwork/GameInfo.h"	// This must go first in EVERY cpp file in the GameEngine
 #include "GameClient/GameClient.h"
 
 // USER INCLUDES //////////////////////////////////////////////////////////////
@@ -538,6 +540,23 @@ void GameClient::update()
 
 			TheShell->showShellMap(TRUE);
 			TheShell->showShell();
+			if (g_localSkirmishPlayers > 0)
+            {
+                if (g_localSkirmishSetup)
+                    TheShell->push("Menus/SkirmishGameOptionsMenu.wnd", TRUE);
+                else
+                {
+                    configureLocalSkirmish();
+                    TheWritableGlobalData->m_mapName = TheSkirmishGameInfo->getMap();
+                    TheSkirmishGameInfo->startGame(0);
+                    InitRandom(TheSkirmishGameInfo->getSeed());
+                    GameMessage *msg = TheMessageStream->appendMessage(GameMessage::MSG_NEW_GAME);
+                    msg->appendIntegerArgument(GAME_SKIRMISH);
+                    msg->appendIntegerArgument(DIFFICULTY_NORMAL);
+                    msg->appendIntegerArgument(0);
+                    msg->appendIntegerArgument(30);
+                }
+            }
 
 			if (TheGlobalData->m_loadSaveGame.isNotEmpty())
 			{

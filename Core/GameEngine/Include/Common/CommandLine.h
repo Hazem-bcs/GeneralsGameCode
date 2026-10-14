@@ -28,6 +28,8 @@
 
 #pragma once
 
+#include "Common/AsciiString.h"
+
 class CommandLine
 {
 public:
@@ -40,3 +42,10 @@ public:
 	// The index excludes the executable name.
 	static bool wasCommandLineArgumentParsed(int argIndex);
 };
+
+#if RTS_ZEROHOUR
+extern AsciiString g_localSkirmishMap;
+extern Int g_localSkirmishPlayers;
+extern Bool g_localSkirmishSetup;
+void configureLocalSkirmish();
+#endif

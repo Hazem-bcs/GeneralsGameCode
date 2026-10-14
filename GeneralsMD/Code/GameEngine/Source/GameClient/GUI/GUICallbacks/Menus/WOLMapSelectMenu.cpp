@@ -107,7 +107,7 @@ static const char *perPlayerGadgetsToHide[] =
 	//"ButtonStartPosition",
 	nullptr
 };
-void positionStartSpots( AsciiString mapName, GameWindow *buttonMapStartPositions[], GameWindow *mapWindow);
+void positionStartSpots( AsciiString mapName, GameWindow *buttonMapStartPositions[], GameWindow *mapWindow, Int slotCount = MAX_SLOTS);
 
 static void showGameSpyGameOptionsUnderlyingGUIElements( Bool show )
 {

@@ -159,6 +159,8 @@ public:
 
 	void init();
 	virtual void reset();
+	// Network subclasses retain eight slots; local Skirmish overrides this.
+	virtual Int getSlotCount() const { return MAX_SLOTS; }
 
 	void clearSlotList();
 
@@ -240,7 +242,7 @@ protected:
 	Bool m_inProgress;
 	Bool m_surrendered;
 	Int m_gameID;
-	GameSlot *m_slot[MAX_SLOTS];
+	GameSlot *m_slot[MAX_SKIRMISH_SLOTS];
 
 	UnsignedInt m_localIP;
 
@@ -277,6 +279,8 @@ Bool        GameInfo::oldFactionsOnly() const           { return m_oldFactionsOn
 void        GameInfo::setOldFactionsOnly( Bool oldFactionsOnly ) { m_oldFactionsOnly = oldFactionsOnly; }
 
 AsciiString GameInfoToAsciiString( const GameInfo *game );
+Int getNumGameColors(const GameInfo *game);
+
 Bool ParseAsciiStringToGameInfo( GameInfo *game, AsciiString options );
 
 
@@ -288,7 +292,7 @@ Bool ParseAsciiStringToGameInfo( GameInfo *game, AsciiString options );
 class SkirmishGameInfo : public GameInfo, public Snapshot
 {
 private:
-	GameSlot m_skirmishSlot[MAX_SLOTS];
+	GameSlot m_skirmishSlot[MAX_SKIRMISH_SLOTS];
 
 protected:
 	// snapshot methods
@@ -297,9 +301,10 @@ protected:
 	virtual void loadPostProcess() override;
 
 public:
+	virtual Int getSlotCount() const override { return MAX_SKIRMISH_SLOTS; }
 	SkirmishGameInfo()
 	{
-		for (Int i = 0; i< MAX_SLOTS; ++i)
+		for (Int i = 0; i< MAX_SKIRMISH_SLOTS; ++i)
 			setSlotPointer(i, &m_skirmishSlot[i]);
 	}
 	virtual ~SkirmishGameInfo() override {}

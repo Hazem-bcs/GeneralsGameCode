@@ -59,6 +59,27 @@ Bool g_logObjectCRCs = FALSE;
 extern Bool g_useStringFile;
 #endif
 
+#if RTS_ZEROHOUR
+AsciiString g_localSkirmishMap;
+Int g_localSkirmishPlayers = 0;
+Bool g_localSkirmishSetup = FALSE;
+
+static Int parseLocalSkirmish(char *args[], int num)
+{
+    if (num < 3) return num;
+    char *end = nullptr;
+    const long players = strtol(args[2], &end, 10);
+    if (!end || *end || players < 2 || players > MAX_SKIRMISH_SLOTS)
+        return 3;
+    g_localSkirmishMap = args[1];
+    g_localSkirmishPlayers = players;
+    g_localSkirmishSetup = stricmp(args[0], "-localskirmishsetup") == 0;
+    TheWritableGlobalData->m_shellMapOn = FALSE;
+    TheWritableGlobalData->m_playIntro = FALSE;
+    return 3;
+}
+#endif
+
 // Retval is number of cmd-line args eaten
 typedef Int (*FuncPtr)( char *args[], int num );
 
@@ -1194,6 +1215,10 @@ static CommandLineParam paramsForEngineInit[] =
 {
 	{ "-nologo", parseNoLogo }, // TheSuperHackers @tweak Is now available in Release builds.
 	{ "-noshellmap", parseNoShellMap },
+#if RTS_ZEROHOUR
+	{ "-localskirmish", parseLocalSkirmish },
+	{ "-localskirmishsetup", parseLocalSkirmish },
+#endif
 	{ "-noShellAnim", parseNoWindowAnimation }, // TheSuperHackers @tweak Is now available in Release builds.
 	{ "-xres", parseXRes },
 	{ "-yres", parseYRes },

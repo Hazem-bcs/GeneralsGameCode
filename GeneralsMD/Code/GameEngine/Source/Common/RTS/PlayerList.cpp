@@ -547,7 +547,7 @@ void PlayerList::assignSlotIndices(const GameInfo& gameInfo)
 {
 	AsciiString playerName;
 
-	for (Int i = 0; i < MAX_SLOTS; ++i)
+	for (Int i = 0; i < gameInfo.getSlotCount(); ++i)
 	{
 		const GameSlot* slot = gameInfo.getConstSlot(i);
 		if (!slot || !slot->isOccupied())

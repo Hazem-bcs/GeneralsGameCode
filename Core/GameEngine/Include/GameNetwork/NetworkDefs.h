@@ -42,11 +42,20 @@ static constexpr const Int MIN_RUNAHEAD = 4;
 static constexpr const Int FRAME_DATA_LENGTH = (MAX_FRAMES_AHEAD + 1) * 2;
 static constexpr const Int FRAMES_TO_KEEP = (MAX_FRAMES_AHEAD / 2) + 1;
 
-// This is the connection numbering: 1-8 are for players
+// Network protocol retains 8 player slots and 8-bit relay masks.
 enum ConnectionNumbers CPP_11(: Int)
 {
-	MAX_PLAYER = 7,			// The index of the highest possible player number.  This is 0 based, so the most players allowed in a game is MAX_PLAYER+1.
+	MAX_PLAYER = 7,
 };
+
+// Keep single-player Skirmish capacity separate from network capacity.
+// Expanding MAX_SLOTS would also resize legacy network structures.
+static constexpr const Int MAX_SKIRMISH_SLOTS =
+#if RTS_ZEROHOUR
+    10;
+#else
+    8;
+#endif
 
 #pragma pack(push, 1)
 struct TransportMessageHeader

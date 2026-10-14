@@ -61,6 +61,8 @@
 #include "GameLogic/Module/SupplyTruckAIUpdate.h"
 #include "GameLogic/Module/SupplyWarehouseDockUpdate.h"
 #include "GameLogic/PartitionManager.h"
+#include "GameNetwork/GameInfo.h"
+#include "GameNetwork/NetworkInterface.h"
 
 
 #define SUPPLY_CENTER_CLOSE_DIST (20*PATHFIND_CELL_SIZE_F)
@@ -2001,6 +2003,17 @@ void AIPlayer::buildBySupplies(Int minimumCash, const AsciiString& thingName)
 			location = newPos;
 		}
 		TheTerrainVisual->removeAllBibs();	// isLocationLegalToBuild adds bib feedback, turn it off.  jba.
+		// Never queue an impossible expansion on an extended local map. The
+		// original script path keeps its retail behavior for network matches.
+		if (!TheNetwork && TheGameLogic->getGameMode() == GAME_SKIRMISH && TheGameInfo &&
+			TheGameInfo->getNumPlayers() > MAX_SLOTS &&
+			TheBuildAssistant->isLocationLegalToBuild(&location, tTemplate, angle,
+				BuildAssistant::CLEAR_PATH | BuildAssistant::TERRAIN_RESTRICTIONS |
+				BuildAssistant::NO_OBJECT_OVERLAP, nullptr, m_player) != LBC_OK) {
+			TheTerrainVisual->removeAllBibs();
+			return;
+		}
+		TheTerrainVisual->removeAllBibs();
 		location.z = 0; // All build list locations are ground relative.
 		m_player->addToPriorityBuildList(thingName, &location, angle);
 		m_curWarehouseID = bestSupplyWarehouse->getID();

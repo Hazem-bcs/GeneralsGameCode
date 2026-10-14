@@ -75,6 +75,7 @@ public:
 	AsciiString m_nameLookupTag;
 	Region3D m_extent;
 	Int m_numPlayers;
+	Int m_startSpotCapacity; ///< Capacity used when scanning this cached map.
 
 	Bool m_isMultiplayer;
 	Bool m_isOfficial;

@@ -27,7 +27,8 @@
 // Author: Michael S. Booth, October 2000
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
+#include "PreRTS.h"
+#include "Common/CommandLine.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Common/AudioAffect.h"
 #include "Common/AudioHandleSpecialValues.h"
@@ -155,7 +156,7 @@ enum
 	LOAD_PROGRESS_POST_PARTICLE_INI_LOAD = LOAD_PROGRESS_START + 1,
 	LOAD_PROGRESS_POST_LOAD_MAP = LOAD_PROGRESS_POST_PARTICLE_INI_LOAD + 1,
 	LOAD_PROGRESS_SIDE_POPULATION = LOAD_PROGRESS_POST_LOAD_MAP + 1,  // Increment the next one by at least MAX_SLOTS
-	LOAD_PROGRESS_POST_SIDE_LIST_INIT = LOAD_PROGRESS_SIDE_POPULATION + 1 + MAX_SLOTS,
+	LOAD_PROGRESS_POST_SIDE_LIST_INIT = LOAD_PROGRESS_SIDE_POPULATION + 1 + MAX_SKIRMISH_SLOTS,
 	LOAD_PROGRESS_POST_PLAYER_LIST_RESET = LOAD_PROGRESS_POST_SIDE_LIST_INIT + 1,
 	LOAD_PROGRESS_POST_SCRIPT_ENGINE_NEW_MAP = LOAD_PROGRESS_POST_PLAYER_LIST_RESET + 1,
 	LOAD_PROGRESS_POST_VICTORY_CONDITION_SETUP = LOAD_PROGRESS_POST_SCRIPT_ENGINE_NEW_MAP + 2,
@@ -169,7 +170,7 @@ enum
 	LOAD_PROGRESS_MAX_ALL_THE_FREAKN_OBJECTS = 80,// THE END OF THE BIG ASS PROGRESS PAUSE
 
 	LOAD_PROGRESS_LOOP_INITIAL_NETWORK_BUILDINGS = LOAD_PROGRESS_MAX_ALL_THE_FREAKN_OBJECTS + 1,  // Increment the next one by at least MAX_SLOTS
-	LOAD_PROGRESS_POST_INITIAL_NETWORK_BUILDINGS = LOAD_PROGRESS_LOOP_INITIAL_NETWORK_BUILDINGS + MAX_SLOTS + 1,
+	LOAD_PROGRESS_POST_INITIAL_NETWORK_BUILDINGS = LOAD_PROGRESS_LOOP_INITIAL_NETWORK_BUILDINGS + MAX_SKIRMISH_SLOTS + 1,
 
 	LOAD_PROGRESS_POST_PRELOAD_ASSETS = LOAD_PROGRESS_POST_INITIAL_NETWORK_BUILDINGS + 1,
 	LOAD_PROGRESS_POST_STARTING_CAMERA = LOAD_PROGRESS_POST_PRELOAD_ASSETS + 1,
@@ -226,7 +227,7 @@ GameLogic::GameLogic()
 
 	m_rankPointsToAddAtGameStart = 0;
 
-	for(Int i = 0; i < MAX_SLOTS; i++)
+	for(Int i = 0; i < MAX_SKIRMISH_SLOTS; i++)
 	{
 		m_progressComplete[i] = FALSE;
 		m_progressCompleteTimeout[i] = 0;
@@ -436,7 +437,7 @@ void GameLogic::reset()
 	TheScriptEngine->reset();
 
 	m_CRC = 0;
-	for(Int i = 0; i < MAX_SLOTS; ++i)
+	for(Int i = 0; i < MAX_SKIRMISH_SLOTS; ++i)
 	{
 		m_progressComplete[i] = FALSE;
 		m_progressCompleteTimeout[i] = 0;
@@ -674,7 +675,7 @@ static void checkForDuplicateColors( GameInfo *game )
 	// Here, we check for collisions in the color choice.  If there is a
 	// collision, the first player will get the color, and the other(s)
 	// will map to random.
-	for (i=MAX_SLOTS-1; i>=0; --i)
+	for (i=game->getSlotCount()-1; i>=0; --i)
 	{
 		GameSlot *slot = game->getSlot(i);
 
@@ -682,7 +683,7 @@ static void checkForDuplicateColors( GameInfo *game )
 			continue;
 
 		Int colorIdx = slot->getColor();
-		if (colorIdx < 0 || colorIdx >= TheMultiplayerSettings->getNumColors())
+		if (colorIdx < 0 || colorIdx >= getNumGameColors(game))
 			continue; // don't need to fix up random ones
 
 		slot->setColor(-1);
@@ -734,7 +735,7 @@ static void populateRandomSideAndColor( GameInfo *game )
 	}
 #endif
 
-	for (i=0; i<MAX_SLOTS; ++i)
+	for (i=0; i<game->getSlotCount(); ++i)
 	{
 		GameSlot *slot = game->getSlot(i);
 
@@ -777,12 +778,12 @@ static void populateRandomSideAndColor( GameInfo *game )
 		}
 
 		Int colorIdx = slot->getColor();
-		if (colorIdx < 0 || colorIdx >= TheMultiplayerSettings->getNumColors())
+		if (colorIdx < 0 || colorIdx >= getNumGameColors(game))
 		{
 			DEBUG_ASSERTCRASH(colorIdx == -1, ("Non-random bad color %d in slot %d", colorIdx, i));
 			while (colorIdx == -1)
 			{
-				colorIdx = GameLogicRandomValue(0, TheMultiplayerSettings->getNumColors()-1);
+				colorIdx = GameLogicRandomValue(0, getNumGameColors(game)-1);
 				if (game->isColorTaken(colorIdx))
 					colorIdx = -1;
 			}
@@ -802,19 +803,19 @@ static void populateRandomStartPosition( GameInfo *game )
 		return;
 
 	Int i;
-	Int numPlayers = MAX_SLOTS;
+	Int numPlayers = game->getSlotCount();
 	const MapMetaData *md = TheMapCache->findMap( game->getMap() );
 	if (md)
-		numPlayers = md->m_numPlayers;
+		numPlayers = min(md->m_numPlayers, game->getSlotCount());
 	else
 		printf("Could not find map \"%s\"\n", game->getMap().str());
 	DEBUG_ASSERTCRASH( md , ("Could not find map %s in the mapcache", game->getMap().str()));
 
 	// generate a map of start spot distances
-	Real startSpotDistance[MAX_SLOTS][MAX_SLOTS];
-	for (i=0; i<MAX_SLOTS; ++i)
+	Real startSpotDistance[MAX_SKIRMISH_SLOTS][MAX_SKIRMISH_SLOTS];
+	for (i=0; i<game->getSlotCount(); ++i)
 	{
-		for (Int j=0; j<MAX_SLOTS; ++j)
+		for (Int j=0; j<game->getSlotCount(); ++j)
 		{
 			if (i != j && (i<numPlayers && j<numPlayers))
 			{
@@ -845,12 +846,12 @@ static void populateRandomStartPosition( GameInfo *game )
 
 	// see if a start spot has been chosen at all yet
 	Bool hasStartSpotBeenPicked = FALSE;
-	Bool taken[MAX_SLOTS];
-	for (i=0; i<MAX_SLOTS; ++i)
+	Bool taken[MAX_SKIRMISH_SLOTS];
+	for (i=0; i<game->getSlotCount(); ++i)
 	{
 		taken[i] = (i<numPlayers)?FALSE:TRUE;
 	}
-	for (i=0; i<MAX_SLOTS; ++i)
+	for (i=0; i<game->getSlotCount(); ++i)
 	{
 		GameSlot *slot = game->getSlot(i);
 
@@ -858,7 +859,7 @@ static void populateRandomStartPosition( GameInfo *game )
 			continue;
 
 		Int posIdx = slot->getStartPos();
-		if (posIdx >= 0 || posIdx >= numPlayers)
+		if (posIdx >= 0 && posIdx < numPlayers)
 		{
 			hasStartSpotBeenPicked = TRUE;
 			taken[posIdx] = TRUE;
@@ -867,7 +868,7 @@ static void populateRandomStartPosition( GameInfo *game )
 
 #if 0  //GS  The old way puts everyone as far apart as possible.
 	// now pick non-observer spots
-	for (i=0; i<MAX_SLOTS; ++i)
+	for (i=0; i<game->getSlotCount(); ++i)
 	{
 		GameSlot *slot = game->getSlot(i);
 
@@ -935,12 +936,12 @@ static void populateRandomStartPosition( GameInfo *game )
 		}
 	}
 #else  //GS  The new way puts teammates next to each other.
-	Int teamPosIdx[MAX_SLOTS];
-	for (i=0; i<MAX_SLOTS; ++i)
+	Int teamPosIdx[MAX_SKIRMISH_SLOTS];
+	for (i=0; i<game->getSlotCount(); ++i)
 		teamPosIdx[i] = -1;  //team has no starting position yet
 
 	// now pick non-observer spots
-	for (i=0; i<MAX_SLOTS; ++i)
+	for (i=0; i<game->getSlotCount(); ++i)
 	{
 		GameSlot *slot = game->getSlot(i);
 
@@ -1041,13 +1042,13 @@ static void populateRandomStartPosition( GameInfo *game )
 
 	// now go back & assign observer spots
 	Int numPlayersInGame = 0;
-	for (i=0; i<MAX_SLOTS; ++i)
+	for (i=0; i<game->getSlotCount(); ++i)
 	{
 		const GameSlot *slot = game->getConstSlot(i);
 		if (slot->isOccupied() && slot->getPlayerTemplate() != PLAYERTEMPLATE_OBSERVER)
 			++numPlayersInGame;
 	}
-	for (i=0; i<MAX_SLOTS; ++i)
+	for (i=0; i<game->getSlotCount(); ++i)
 	{
 		GameSlot *slot = game->getSlot(i);
 
@@ -1276,7 +1277,7 @@ void GameLogic::tryStartNewGame( Bool loadingSaveGame )
 	Bool isSkirmishOrSkirmishReplay = FALSE;
 	if (TheGameInfo)
 	{
-		for (Int i=0; i<MAX_SLOTS; ++i)
+		for (Int i=0; i<TheGameInfo->getSlotCount(); ++i)
 		{
 			GameSlot *slot = TheGameInfo->getSlot(i);
 			if (!loadingSaveGame) {
@@ -1374,7 +1375,7 @@ void GameLogic::tryStartNewGame( Bool loadingSaveGame )
 		}
 
 		//DEBUG_LOG(("Starting LAN game with %d players", game->getNumPlayers()));
-		for (int i=0; i<MAX_SLOTS; ++i)
+		for (int i=0; i<TheGameInfo->getSlotCount(); ++i)
 		{
 			// Add a Side to TheSidesList
 			GameSlot *slot = TheGameInfo->getSlot(i);
@@ -1382,7 +1383,7 @@ void GameLogic::tryStartNewGame( Bool loadingSaveGame )
 			if (!slot || !slot->isHuman())
 			{
 				m_progressComplete[i] = TRUE;
-				lastHeardFrom(i);
+				if (i < MAX_SLOTS) lastHeardFrom(i);
 			}
 
 			if (!slot || !slot->isOccupied())
@@ -1413,7 +1414,7 @@ void GameLogic::tryStartNewGame( Bool loadingSaveGame )
 			AsciiString enemiesString, alliesString;
 			Int team = slot->getTeamNumber();
 			DEBUG_LOG(("Looking for allies of player %d, team %d", i, team));
-			for(int j=0; j < MAX_SLOTS; ++j)
+			for(int j=0; j < TheGameInfo->getSlotCount(); ++j)
 			{
 				GameSlot *teamSlot = TheGameInfo->getSlot(j);
 				// for check to see if we're trying to add ourselves
@@ -1564,7 +1565,7 @@ void GameLogic::tryStartNewGame( Bool loadingSaveGame )
 		Int lastTeam = -1;
 		if (TheGameInfo)
 		{
-			for (int i=0; i<MAX_SLOTS; ++i)
+			for (int i=0; i<TheGameInfo->getSlotCount(); ++i)
 			{
 				const GameSlot *slot = TheGameInfo->getConstSlot(i);
 				if (slot->isOccupied() && slot->getPlayerTemplate() != PLAYERTEMPLATE_OBSERVER)
@@ -1795,7 +1796,7 @@ void GameLogic::tryStartNewGame( Bool loadingSaveGame )
 
 	if (TheGameInfo)
 	{
-		for (int i=0; i<MAX_SLOTS; ++i)
+		for (int i=0; i<TheGameInfo->getSlotCount(); ++i)
 		{
 			GameSlot *slot = TheGameInfo->getSlot(i);
 
@@ -1982,7 +1983,7 @@ void GameLogic::tryStartNewGame( Bool loadingSaveGame )
 	if (TheGameInfo && !loadingSaveGame)
 	{
 		Int progressCount = LOAD_PROGRESS_LOOP_INITIAL_NETWORK_BUILDINGS;
-		for (int i=0; i<MAX_SLOTS; ++i)
+		for (int i=0; i<TheGameInfo->getSlotCount(); ++i)
 		{
 			GameSlot *slot = TheGameInfo->getSlot(i);
 
@@ -3927,7 +3928,39 @@ void GameLogic::update()
 	// increment world time
 	if (!m_startNewGame)
 	{
-		m_frame++;
+        m_frame++;
+        if (g_localSkirmishPlayers > 0 && TheGameInfo && m_gameMode == GAME_SKIRMISH &&
+            (m_frame == 150 || m_frame == 900 || m_frame == 3600 || m_frame == 9000 || m_frame == 18000))
+        {
+            fprintf(stderr, "LOCAL_SKIRMISH frame=%u occupied=%d network=%s map=%s\n", m_frame,
+                TheGameInfo->getNumPlayers(), TheNetwork ? "present" : "none", TheGameInfo->getMap().str());
+            for (Int i = 0; i < TheGameInfo->getSlotCount(); ++i)
+            {
+                const GameSlot *slot = TheGameInfo->getConstSlot(i);
+                if (!slot->isOccupied()) continue;
+                Player *player = ThePlayerList->getPlayerFromSlotIndex(i);
+                Int objects = 0, structures = 0, supplyCenters = 0, harvesters = 0, combatUnits = 0;
+                for (Object *obj = m_objList; obj; obj = obj->getNextObject())
+                {
+                    if (obj->getControllingPlayer() != player) continue;
+                    ++objects;
+                    if (obj->isKindOf(KINDOF_STRUCTURE) && !obj->testStatus(OBJECT_STATUS_UNDER_CONSTRUCTION)) ++structures;
+                    if (obj->isKindOf(KINDOF_FS_SUPPLY_CENTER) && !obj->testStatus(OBJECT_STATUS_UNDER_CONSTRUCTION)) ++supplyCenters;
+                    if (obj->isKindOf(KINDOF_HARVESTER)) ++harvesters;
+                    if (obj->isKindOf(KINDOF_CAN_ATTACK) && !obj->isKindOf(KINDOF_STRUCTURE) &&
+                        !obj->isKindOf(KINDOF_DOZER) && !obj->isKindOf(KINDOF_HARVESTER)) ++combatUnits;
+                }
+                fprintf(stderr, "LOCAL_SKIRMISH slot=%d ai=%d player=%d start=%d color=%d faction=%d objects=%d skirmishAI=%d local=%d structures=%d supplyCenters=%d harvesters=%d combatUnits=%d cash=%u earned=%d builtUnits=%d kills=%d\n",
+                    i, slot->isAI(), player ? player->getPlayerIndex() : -1, slot->getStartPos(),
+                    slot->getColor(), slot->getPlayerTemplate(), objects,
+                    player ? player->isSkirmishAIPlayer() : -1, player ? player->isLocalPlayer() : -1,
+                    structures, supplyCenters, harvesters, combatUnits, player ? player->getMoney()->countMoney() : 0,
+                    player ? player->getScoreKeeper()->getTotalMoneyEarned() : 0,
+                    player ? player->getScoreKeeper()->getTotalUnitsBuilt() : 0,
+                    player ? player->getScoreKeeper()->getTotalUnitsDestroyed() : 0);
+            }
+            fflush(stderr);
+        }
 		m_hasUpdated = TRUE;
 	}
 }

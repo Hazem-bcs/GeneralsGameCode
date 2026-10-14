@@ -172,7 +172,7 @@ private:
 	Int						m_playerCount;
 	Player				*m_players[MAX_PLAYER_COUNT];
 	Int						m_slotIndices[MAX_PLAYER_COUNT];
-	Int						m_slotToPlayerIndices[MAX_SLOTS];
+	Int						m_slotToPlayerIndices[MAX_SKIRMISH_SLOTS];
 
 };
 

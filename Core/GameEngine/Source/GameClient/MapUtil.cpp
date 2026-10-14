@@ -292,7 +292,7 @@ void WaypointMap::update()
 	}
 
 	m_numStartSpots = 0;
-	for (Int i=0; i<MAX_SLOTS; ++i)
+	for (Int i=0; i<MAX_SKIRMISH_SLOTS; ++i)
 	{
 		startingCamName.format("Player_%d_Start", i+1); // start pos waypoints are 1-based
 		it = m_waypoints->find(startingCamName);
@@ -362,6 +362,7 @@ void MapCache::writeCacheINI( const AsciiString &mapDir )
 
 			fprintf(fp, "  isMultiplayer = %s\n", (md.m_isMultiplayer)?"yes":"no");
 			fprintf(fp, "  numPlayers = %d\n", md.m_numPlayers);
+			fprintf(fp, "  StartSpotCapacity = %d\n", md.m_startSpotCapacity);
 
 			fprintf(fp, "  extentMin = X:%2.2f Y:%2.2f Z:%2.2f\n", md.m_extent.lo.x, md.m_extent.lo.y, md.m_extent.lo.z);
 			fprintf(fp, "  extentMax = X:%2.2f Y:%2.2f Z:%2.2f\n", md.m_extent.hi.x, md.m_extent.hi.y, md.m_extent.hi.z);
@@ -585,7 +586,8 @@ Bool MapCache::addMap(
 		// Found the map in our cache. Check to see if it has changed.
 		const MapMetaData& md = it->second;
 
-		if (md.m_filesize == fileInfo.sizeLow && md.m_CRC != 0)
+		if (md.m_filesize == fileInfo.sizeLow && md.m_CRC != 0 &&
+			md.m_startSpotCapacity == MAX_SKIRMISH_SLOTS)
 		{
 			// Force a lookup so that we don't display the English localization in all builds.
 			if (md.m_nameLookupTag.isEmpty())
@@ -639,6 +641,7 @@ Bool MapCache::addMap(
 	md.m_doesExist = TRUE;
 	md.m_waypoints.update();
 	md.m_numPlayers = md.m_waypoints.m_numStartSpots;
+	md.m_startSpotCapacity = MAX_SKIRMISH_SLOTS;
 	md.m_isMultiplayer = (md.m_numPlayers >= 2);
 	md.m_timestamp.m_highTimeStamp = fileInfo.timestampHigh;
 	md.m_timestamp.m_lowTimeStamp = fileInfo.timestampLow;
@@ -949,7 +952,7 @@ Int populateMapListboxNoReset( GameWindow *listbox, Bool useSystemMaps, Bool isM
 	MapDisplayToFileNameList fileNames;
 	Int curNumPlayersInMap = 1;
 
-	for (; curNumPlayersInMap <= MAX_SLOTS; ++curNumPlayersInMap)
+	for (; curNumPlayersInMap <= MAX_SKIRMISH_SLOTS; ++curNumPlayersInMap)
 	{
 		buildMapListForNumPlayers(mapNames, fileNames, curNumPlayersInMap);
 

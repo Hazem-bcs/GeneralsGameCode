@@ -348,6 +348,67 @@ Bool GameEngine::isGameHalted()
 /** -----------------------------------------------------------------------------------------------
  * Initialize the game engine by initializing the GameLogic and GameClient.
  */
+// An opt-in CLI run verifies the actual serializers alongside the playable setup.
+static Bool validateLocalSkirmishConfiguration()
+{
+    class LegacySlotControl : public GameInfo
+    {
+        GameSlot slots[MAX_SLOTS];
+    public:
+        LegacySlotControl()
+        {
+            for (Int i = 0; i < MAX_SLOTS; ++i) setSlotPointer(i, &slots[i]);
+        }
+    } networkControl;
+    fprintf(stderr, "LOCAL_SKIRMISH check=serialize\n");
+    fflush(stderr);
+    SkirmishGameInfo localControl;
+    const AsciiString localOptions = GameInfoToAsciiString(TheSkirmishGameInfo);
+    if (networkControl.getSlotCount() != MAX_SLOTS ||
+        !ParseAsciiStringToGameInfo(&localControl, localOptions) ||
+        localControl.getNumPlayers() != g_localSkirmishPlayers ||
+        ParseAsciiStringToGameInfo(&networkControl, localOptions))
+        return FALSE;
+    fprintf(stderr, "LOCAL_SKIRMISH check=legacy\n");
+    fflush(stderr);
+    for (Int i = 0; i < MAX_SLOTS; ++i)
+        networkControl.setSlot(i, *TheSkirmishGameInfo->getSlot(i));
+    networkControl.setMap(TheSkirmishGameInfo->getMap());
+    const AsciiString legacyOptions = GameInfoToAsciiString(&networkControl);
+    if (!ParseAsciiStringToGameInfo(&networkControl, legacyOptions) ||
+        !ParseAsciiStringToGameInfo(&localControl, legacyOptions) ||
+        localControl.getSlot(8)->isOccupied() || localControl.getSlot(9)->isOccupied())
+        return FALSE;
+    fprintf(stderr, "LOCAL_SKIRMISH serialization=pass networkSlots=%d localSlots=%d legacy=pass\n",
+        networkControl.getSlotCount(), localControl.getSlotCount());
+    fflush(stderr);
+    return TRUE;
+}
+
+void configureLocalSkirmish()
+{
+    AsciiString map = g_localSkirmishMap;
+    map.toLower();
+    const MapMetaData *md = TheMapCache->findMap(map);
+    if (!md || !TheSkirmishGameInfo) return;
+    TheSkirmishGameInfo->setLocalIP(0);
+    TheSkirmishGameInfo->setMap(map);
+    TheSkirmishGameInfo->setMapCRC(md->m_CRC);
+    TheSkirmishGameInfo->setMapSize(md->m_filesize);
+    TheSkirmishGameInfo->setSeed(12345);
+    getNumGameColors(TheSkirmishGameInfo);
+    for (Int i = 0; i < MAX_SKIRMISH_SLOTS; ++i)
+    {
+        GameSlot slot;
+        slot.setState(i == 0 ? SLOT_PLAYER : (i < g_localSkirmishPlayers ? SLOT_EASY_AI : SLOT_CLOSED), L"Player");
+        slot.setColor(-1);
+        slot.setPlayerTemplate(PLAYERTEMPLATE_RANDOM);
+        slot.setStartPos(-1);
+        slot.setTeamNumber(-1);
+        TheSkirmishGameInfo->setSlot(i, slot);
+    }
+}
+
 void GameEngine::init()
 {
 	try {
@@ -707,6 +768,31 @@ void GameEngine::init()
 
 		// load the initial shell screen
 		//TheShell->push( "Menus/MainMenu.wnd" );
+
+        // Reproducible local setup; no Network instance or transport is created.
+        if (g_localSkirmishPlayers > 0)
+        {
+            AsciiString map = g_localSkirmishMap;
+            map.toLower();
+            const MapMetaData *md = TheMapCache->findMap(map);
+            if (!md || !md->m_isMultiplayer || md->m_numPlayers < g_localSkirmishPlayers)
+            {
+                fprintf(stderr, "LOCAL_SKIRMISH rejected map=%s players=%d\n", map.str(), g_localSkirmishPlayers);
+                m_quitting = TRUE;
+            }
+            else
+            {
+                if (!TheSkirmishGameInfo) TheSkirmishGameInfo = NEW SkirmishGameInfo;
+                TheSkirmishGameInfo->enterGame();
+                configureLocalSkirmish();
+                if (!validateLocalSkirmishConfiguration())
+                {
+                    fprintf(stderr, "LOCAL_SKIRMISH serialization=FAIL\n");
+                    m_quitting = TRUE;
+                }
+
+            }
+        }
 
 		// This allows us to run a map from the command line
 		if (TheGlobalData->m_initialFile.isEmpty() == FALSE)

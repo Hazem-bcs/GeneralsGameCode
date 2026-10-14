@@ -144,6 +144,10 @@ run_build() {
     local target="$2"
     local interactive="$3"
 
+    if [[ "$interactive" != "true" ]]; then
+        python3 "$SCRIPT_DIR/prepare_vc6_rebuild.py"
+    fi
+
     local docker_flags=""
     if [[ "$interactive" == "true" ]]; then
         docker_flags="-it --entrypoint bash"

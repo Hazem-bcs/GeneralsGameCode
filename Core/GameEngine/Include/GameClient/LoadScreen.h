@@ -239,12 +239,12 @@ public:
 	virtual void processProgress(Int playerId, Int percentage) override;
 	virtual void setProgressRange( Int min, Int max ) override { }
 private:
-	GameWindow *m_progressBars[MAX_SLOTS];	///< pointer array to all the progress bars on the window
-	GameWindow *m_playerNames[MAX_SLOTS];		///< pointer array to all the static text player names on the window
-	GameWindow *m_playerSide[MAX_SLOTS];		///< pointer array to all the static text player sides
-	Int m_playerLookup[MAX_SLOTS];					///< lookup table to translate network slot info screen slot (to account for holes in the slot list)
+	GameWindow *m_progressBars[MAX_SKIRMISH_SLOTS];	///< pointer array to all the progress bars on the window
+	GameWindow *m_playerNames[MAX_SKIRMISH_SLOTS];		///< pointer array to all the static text player names on the window
+	GameWindow *m_playerSide[MAX_SKIRMISH_SLOTS];		///< pointer array to all the static text player sides
+	Int m_playerLookup[MAX_SKIRMISH_SLOTS];					///< lookup table to translate network slot info screen slot (to account for holes in the slot list)
 	GameWindow *m_mapPreview;
-	GameWindow *m_buttonMapStartPosition[MAX_SLOTS];
+	GameWindow *m_buttonMapStartPosition[MAX_SKIRMISH_SLOTS];
 	GameWindow *m_portraitLocalGeneral;
 	GameWindow *m_featuresLocalGeneral;
 	GameWindow *m_nameLocalGeneral;

@@ -445,9 +445,9 @@ private:
 	Bool m_mouseVisibleMemory;
 	Bool m_logicTimeScaleEnabledMemory;
 
-	Bool m_progressComplete[MAX_SLOTS];
+	Bool m_progressComplete[MAX_SKIRMISH_SLOTS];
 	enum { PROGRESS_COMPLETE_TIMEOUT = 60000 };							///< Timeout we wait for when we've completed our Load
-	Int m_progressCompleteTimeout[MAX_SLOTS];
+	Int m_progressCompleteTimeout[MAX_SKIRMISH_SLOTS];
 	void testTimeOut();
 	void lastHeardFrom( Int playerId );
 	Bool m_forceGameStartByTimeOut;													///< If we timeout someone we're waiting to load, set this flag to start the game
