@@ -16,6 +16,8 @@
 **	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "PreRTS.h" // Defines RETAIL_COMPATIBLE_PATHFINDING before conditional globals.
+
 #include "GameLogic/Pathfinder/PathfindConstants.h"
 
 #if RETAIL_COMPATIBLE_PATHFINDING

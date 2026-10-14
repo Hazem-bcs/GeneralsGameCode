@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "Lib/BaseType.h"
+#include "Common/GameType.h"
 class PathfindCell;
 
 class PathfindCellInfo
