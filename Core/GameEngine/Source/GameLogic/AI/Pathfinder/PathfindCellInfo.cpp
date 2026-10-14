@@ -20,7 +20,13 @@
 
 #include "GameLogic/Pathfinder/PathfindCellInfo.h"
 
-constexpr const UnsignedInt CELL_INFOS_TO_ALLOCATE = 30000;
+static UnsignedInt s_cellInfoCapacity = 30000;
+static UnsignedInt s_freeCellInfos = 0;
+static UnsignedInt s_allocationFailures = 0;
+
+UnsignedInt PathfindCellInfo::getCapacity() { return s_cellInfoCapacity; }
+UnsignedInt PathfindCellInfo::getFreeCount() { return s_freeCellInfos; }
+UnsignedInt PathfindCellInfo::getAllocationFailures() { return s_allocationFailures; }
 
 PathfindCellInfo *PathfindCellInfo::s_infoArray = nullptr;
 PathfindCellInfo *PathfindCellInfo::s_firstFree = nullptr;
@@ -28,7 +34,9 @@ PathfindCellInfo *PathfindCellInfo::s_firstFree = nullptr;
 #if RETAIL_COMPATIBLE_PATHFINDING
 void PathfindCellInfo::forceCleanPathFindCellInfos()
 {
-	for (Int i = 0; i < CELL_INFOS_TO_ALLOCATE - 1; i++) {
+	// Preserve retail cleanup for legacy matches; include every extended record.
+	const UnsignedInt limit = s_cellInfoCapacity == 30000 ? s_cellInfoCapacity - 1 : s_cellInfoCapacity;
+	for (UnsignedInt i = 0; i < limit; i++) {
 		s_infoArray[i].m_nextOpen = nullptr;
 		s_infoArray[i].m_prevOpen = nullptr;
 		s_infoArray[i].m_open = FALSE;
@@ -40,14 +48,17 @@ void PathfindCellInfo::forceCleanPathFindCellInfos()
 /**
  * Allocates a pool of pathfind cell infos.
  */
-void PathfindCellInfo::allocateCellInfos()
+void PathfindCellInfo::allocateCellInfos(UnsignedInt capacity)
 {
 	releaseCellInfos();
-	s_infoArray = MSGNEW("PathfindCellInfo") PathfindCellInfo[CELL_INFOS_TO_ALLOCATE];	// pool[]ify
-	s_infoArray[CELL_INFOS_TO_ALLOCATE-1].m_pathParent = nullptr;
-	s_infoArray[CELL_INFOS_TO_ALLOCATE-1].m_isFree = true;
+	s_cellInfoCapacity = capacity < 30000 ? 30000 : capacity;
+	s_freeCellInfos = s_cellInfoCapacity;
+	s_allocationFailures = 0;
+	s_infoArray = MSGNEW("PathfindCellInfo") PathfindCellInfo[s_cellInfoCapacity];	// pool[]ify
+	s_infoArray[s_cellInfoCapacity-1].m_pathParent = nullptr;
+	s_infoArray[s_cellInfoCapacity-1].m_isFree = true;
 	s_firstFree = s_infoArray;
-	for (Int i=0; i<CELL_INFOS_TO_ALLOCATE-1; i++) {
+	for (UnsignedInt i=0; i<s_cellInfoCapacity-1; i++) {
 		s_infoArray[i].m_pathParent = &s_infoArray[i+1];
 		s_infoArray[i].m_isFree = true;
 	}
@@ -67,10 +78,11 @@ void PathfindCellInfo::releaseCellInfos()
 		DEBUG_ASSERTCRASH(s_firstFree->m_isFree, ("Should be freed."));
 		s_firstFree = s_firstFree->m_pathParent;
 	}
-	DEBUG_ASSERTCRASH(count==CELL_INFOS_TO_ALLOCATE, ("Error - Allocated cellinfos."));
+	DEBUG_ASSERTCRASH(count==s_cellInfoCapacity, ("Error - Allocated cellinfos."));
 	delete[] s_infoArray;
 	s_infoArray = nullptr;
 	s_firstFree = nullptr;
+	s_freeCellInfos = 0;
 }
 
 /**
@@ -80,6 +92,7 @@ PathfindCellInfo *PathfindCellInfo::getACellInfo(PathfindCell *cell,const ICoord
 {
 	PathfindCellInfo *info = s_firstFree;
 	if (s_firstFree) {
+		--s_freeCellInfos;
 		DEBUG_ASSERTCRASH(s_firstFree->m_isFree, ("Should be freed."));
 		s_firstFree = s_firstFree->m_pathParent;
 		info->m_isFree = false;  // Just allocated it.
@@ -100,6 +113,8 @@ PathfindCellInfo *PathfindCellInfo::getACellInfo(PathfindCell *cell,const ICoord
 		info->m_obstacleIsFence = false;
 		info->m_obstacleIsTransparent = false;
 		info->m_blockedByAlly = false;
+	} else {
+		++s_allocationFailures;
 	}
 	return info;
 }
@@ -115,4 +130,5 @@ void PathfindCellInfo::releaseACellInfo(PathfindCellInfo *theInfo)
 	theInfo->m_pathParent = s_firstFree;
 	s_firstFree = theInfo;
 	s_firstFree->m_isFree = true;
+	++s_freeCellInfos;
 }

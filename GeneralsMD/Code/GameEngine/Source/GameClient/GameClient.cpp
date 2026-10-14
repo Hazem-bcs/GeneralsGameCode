@@ -554,7 +554,10 @@ void GameClient::update()
                     msg->appendIntegerArgument(GAME_SKIRMISH);
                     msg->appendIntegerArgument(DIFFICULTY_NORMAL);
                     msg->appendIntegerArgument(0);
-                    msg->appendIntegerArgument(30);
+                    // Direct CLI tests can run faster without skipping logic frames.
+                    // Editable setup and ordinary GUI play retain their own speed.
+                    extern Int g_localSkirmishTestFPS;
+                    msg->appendIntegerArgument(g_localSkirmishTestFPS);
                 }
             }
 

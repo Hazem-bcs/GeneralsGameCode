@@ -44,6 +44,7 @@ public:
 	Bool isDestroyed() {return m_destroyed;} // True if it has been destroyed.
 	PathfindCell *getCell(Int x, Int y);
 	Int getZone() {return m_zone;}
+	UnsignedInt getAllocatedCellCount() const { return m_blockOfMapCells ? m_width * m_height : 0; }
 	void setZone(Int zone) {m_zone = zone;}
 	void applyZone(); // Propagates m_zone to all cells.
 	void getStartCellIndex(ICoord2D *start) {*start = m_startCell;}

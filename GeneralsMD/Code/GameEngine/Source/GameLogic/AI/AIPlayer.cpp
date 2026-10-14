@@ -2264,10 +2264,16 @@ Object *AIPlayer::findSupplyCenter(Int minimumCash)
 
 				PartitionFilterAcceptByKindOf f1(MAKE_KINDOF_MASK(KINDOF_CASH_GENERATOR), KINDOFMASK_NONE);
 				PartitionFilterPlayer f2(m_player, true);	// Only find your own units.
+				PartitionFilterPlayerAffiliation alliedCenters(m_player, ALLOW_ALLIES, true);
+				extern Bool g_localSkirmishFiveAside;
+				Bool teamExpansion = g_localSkirmishFiveAside && !TheNetwork && TheGameInfo &&
+					TheGameInfo->getNumPlayers() > MAX_SLOTS && TheGameLogic->getGameMode() == GAME_SKIRMISH;
 				PartitionFilterOnMap filterMapStatus;
 
 
-				PartitionFilter *filters[] = { &f1, &f2, &filterMapStatus, nullptr };
+				// A five-aside AI should take an unused site instead of stacking a
+				// depot on a teammate's already-developed resource source.
+				PartitionFilter *filters[] = { &f1, teamExpansion ? (PartitionFilter*)&alliedCenters : (PartitionFilter*)&f2, &filterMapStatus, nullptr };
 
 				Object *supplyCenter = ThePartitionManager->getClosestObject(&center, radius, FROM_BOUNDINGSPHERE_2D, filters);
 				if (supplyCenter) {

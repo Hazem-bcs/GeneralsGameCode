@@ -387,6 +387,9 @@ static Bool validateLocalSkirmishConfiguration()
 
 void configureLocalSkirmish()
 {
+    extern Bool g_localSkirmishFiveAside;
+    extern Bool g_localSkirmishHardAI;
+    extern Int g_localSkirmishTestCash;
     AsciiString map = g_localSkirmishMap;
     map.toLower();
     const MapMetaData *md = TheMapCache->findMap(map);
@@ -396,15 +399,22 @@ void configureLocalSkirmish()
     TheSkirmishGameInfo->setMapCRC(md->m_CRC);
     TheSkirmishGameInfo->setMapSize(md->m_filesize);
     TheSkirmishGameInfo->setSeed(12345);
+    if (g_localSkirmishTestCash > 0) {
+        Money cash;
+        cash.init();
+        cash.deposit(g_localSkirmishTestCash, FALSE, FALSE);
+        TheSkirmishGameInfo->setStartingCash(cash);
+    }
     getNumGameColors(TheSkirmishGameInfo);
     for (Int i = 0; i < MAX_SKIRMISH_SLOTS; ++i)
     {
         GameSlot slot;
-        slot.setState(i == 0 ? SLOT_PLAYER : (i < g_localSkirmishPlayers ? SLOT_EASY_AI : SLOT_CLOSED), L"Player");
+        slot.setState(i == 0 ? SLOT_PLAYER : (i < g_localSkirmishPlayers ?
+            (g_localSkirmishHardAI ? SLOT_BRUTAL_AI : SLOT_EASY_AI) : SLOT_CLOSED), L"Player");
         slot.setColor(-1);
         slot.setPlayerTemplate(PLAYERTEMPLATE_RANDOM);
-        slot.setStartPos(-1);
-        slot.setTeamNumber(-1);
+        slot.setStartPos(g_localSkirmishFiveAside ? i : -1);
+        slot.setTeamNumber(g_localSkirmishFiveAside ? i / 5 : -1);
         TheSkirmishGameInfo->setSlot(i, slot);
     }
 }
@@ -775,7 +785,9 @@ void GameEngine::init()
             AsciiString map = g_localSkirmishMap;
             map.toLower();
             const MapMetaData *md = TheMapCache->findMap(map);
-            if (!md || !md->m_isMultiplayer || md->m_numPlayers < g_localSkirmishPlayers)
+            extern Bool g_localSkirmishFiveAside;
+            if (!md || !md->m_isMultiplayer || md->m_numPlayers < g_localSkirmishPlayers ||
+                (g_localSkirmishFiveAside && g_localSkirmishPlayers != 10))
             {
                 fprintf(stderr, "LOCAL_SKIRMISH rejected map=%s players=%d\n", map.str(), g_localSkirmishPlayers);
                 m_quitting = TRUE;

@@ -1,5 +1,10 @@
 # Local ten-player Zero Hour — 2026-10-14
 
+**Later checkpoint:** the owner subsequently reproduced a late vehicle stall in this
+build. Read [the continuation handoff](../../HANDOFF_TEN_PLAYERS.md) and
+[vehicle-stall validation](vehicle-stall-checkpoint-2026-10-14.md) before interpreting
+the five-minute results below as longer-match stability.
+
 Scope: one local human plus nine Skirmish AI players. This is a tested development
 build, not a claim of complete retail compatibility, competitive balance, or long-match stability.
 

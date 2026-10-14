@@ -50,6 +50,10 @@
 #include "GameLogic/PartitionManager.h"
 #include "GameLogic/TerrainLogic.h"
 #include "GameLogic/Weapon.h"
+#if RTS_ZEROHOUR
+#include "GameNetwork/GameInfo.h"
+#include "GameNetwork/NetworkInterface.h"
+#endif
 #if RETAIL_COMPATIBLE_PATHFINDING
 #include "GameClient/InGameUI.h"
 #include "GameClient/GameText.h"
@@ -882,6 +886,26 @@ void Pathfinder::newMap()
 			m_layers[LAYER_WALL].init(nullptr, LAYER_WALL);
 			m_layers[LAYER_WALL].allocateCellsForWallLayer(&m_extent, m_wallPieces, m_numWallPieces);
 		}
+
+		// Obstacles and unit reservations retain records between searches. A fixed
+		// 30,000-record pool can fill entirely during a ten-player ground battle.
+		// Size this local-only pool for every allocated ground/bridge/wall cell,
+		// before classification gives any cell a record. Legacy/network matches
+		// still start with the original capacity and pathfinding behavior.
+		UnsignedInt infoCapacity = 30000;
+#if RTS_ZEROHOUR
+		if (!TheNetwork && TheGameInfo && TheGameLogic->getGameMode() == GAME_SKIRMISH &&
+			TheGameInfo->getNumPlayers() > MAX_SLOTS) {
+			infoCapacity += (bounds.hi.x + 1) * (bounds.hi.y + 1);
+			for (Int layer = 0; layer <= LAYER_LAST; ++layer)
+				infoCapacity += m_layers[layer].getAllocatedCellCount();
+#if RETAIL_COMPATIBLE_PATHFINDING
+			// Apply existing safe list/parent cleanup from the start in this mode.
+			s_useFixedPathfinding = true;
+#endif
+		}
+#endif
+		PathfindCellInfo::allocateCellInfos(infoCapacity);
 	}
 	classifyMap();
 	// Add existing objects.

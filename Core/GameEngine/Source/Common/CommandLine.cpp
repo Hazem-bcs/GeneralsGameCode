@@ -63,6 +63,42 @@ extern Bool g_useStringFile;
 AsciiString g_localSkirmishMap;
 Int g_localSkirmishPlayers = 0;
 Bool g_localSkirmishSetup = FALSE;
+Bool g_localSkirmishFiveAside = FALSE;
+Bool g_localSkirmishHardAI = FALSE;
+Int g_localSkirmishTestFPS = 30;
+Int g_localSkirmishTestCash = 0;
+
+static Int parseLocalSkirmishTestCash(char *args[], int num)
+{
+    if (num < 2) return num;
+    char *end = nullptr;
+    const long cash = strtol(args[1], &end, 10);
+    if (end && !*end && cash >= 1 && cash <= 1000000)
+        g_localSkirmishTestCash = cash;
+    return 2;
+}
+
+static Int parseLocalSkirmishTestFPS(char *args[], int num)
+{
+    if (num < 2) return num;
+    char *end = nullptr;
+    const long fps = strtol(args[1], &end, 10);
+    if (end && !*end && fps >= 1 && fps <= 1000)
+        g_localSkirmishTestFPS = fps;
+    return 2;
+}
+
+static Int parseLocalFiveAside(char *args[], int num)
+{
+    g_localSkirmishFiveAside = TRUE;
+    return 1;
+}
+
+static Int parseLocalHardAI(char *args[], int num)
+{
+    g_localSkirmishHardAI = TRUE;
+    return 1;
+}
 
 static Int parseLocalSkirmish(char *args[], int num)
 {
@@ -1218,6 +1254,10 @@ static CommandLineParam paramsForEngineInit[] =
 #if RTS_ZEROHOUR
 	{ "-localskirmish", parseLocalSkirmish },
 	{ "-localskirmishsetup", parseLocalSkirmish },
+	{ "-localfiveaside", parseLocalFiveAside },
+	{ "-localhardai", parseLocalHardAI },
+	{ "-localskirmishtestfps", parseLocalSkirmishTestFPS },
+	{ "-localskirmishtestcash", parseLocalSkirmishTestCash },
 #endif
 	{ "-noShellAnim", parseNoWindowAnimation }, // TheSuperHackers @tweak Is now available in Release builds.
 	{ "-xres", parseXRes },

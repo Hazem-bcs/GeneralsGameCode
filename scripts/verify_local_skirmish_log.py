@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 
 
-def verify(text, players=10, minimum_frame=900, economy=False, expansion=False):
+def verify(text, players=10, minimum_frame=900, economy=False, expansion=False, five_aside=False, hard_ai=False):
     if re.search(r"stack overflow|EXCEPTION_ACCESS_VIOLATION|LOCAL_SKIRMISH rejected|serialization=FAIL", text, re.I):
         raise ValueError("Runtime reported a crash or rejected the setup")
     observations = []
@@ -18,6 +18,8 @@ def verify(text, players=10, minimum_frame=900, economy=False, expansion=False):
             observations.append(current)
         elif line.startswith("LOCAL_SKIRMISH slot=") and current is not None:
             current["slots"].append({key: int(value) for key, value in re.findall(r"(\w+)=(-?\d+)", line)})
+        elif line.startswith("LOCAL_SITE ") and current is not None:
+            current.setdefault("sites", []).append({key: float(value) for key, value in re.findall(r"(\w+)=(-?[\d.]+)", line)})
     if not observations or int(observations[-1]["frame"]) < minimum_frame:
         raise ValueError("Simulation did not reach the required frame")
     for observation in observations:
@@ -37,6 +39,11 @@ def verify(text, players=10, minimum_frame=900, economy=False, expansion=False):
                 raise ValueError(f"Invalid or duplicate {key} assignment")
         if int(observation["frame"]) == 150 and any(slot["objects"] < 2 for slot in slots):
             raise ValueError("A player did not receive initial objects")
+        if five_aside and (players != 10 or any(slot.get("team") != slot["slot"] // 5 or
+                                              slot["start"] != slot["slot"] for slot in slots)):
+            raise ValueError("Expected two teams of five at the fixed west/east starts")
+        if hard_ai and any(slot.get("aiState") != 4 for slot in slots[1:]):
+            raise ValueError("An AI slot is not Hard Army")
     active = observations[-1]["slots"][1:]
     if economy:
         for slot in active:
@@ -50,10 +57,17 @@ def verify(text, players=10, minimum_frame=900, economy=False, expansion=False):
                 raise ValueError("An AI economy stopped earning resources")
     if expansion and any(slot.get("supplyCenters", 0) < 2 for slot in active):
         raise ValueError("An AI did not complete a second supply center")
+    if five_aside and minimum_frame >= 9000:
+        for slot in active:
+            history = [item["slots"][slot["slot"]] for item in observations]
+            if not any(x.get("frontlineUnits", 0) > 0 or x.get("kills", 0) > 0 for x in history):
+                raise ValueError(f"AI slot {slot['slot']} has not reached battle or registered combat")
     return {"players": players, "human": 1, "ai": players - 1,
             "economy_verified": economy, "expansion_verified": expansion,
+            "five_aside_verified": five_aside, "hard_ai_verified": hard_ai,
             "frames": [int(item["frame"]) for item in observations],
-            "initial_slots": observations[0]["slots"], "latest_slots": observations[-1]["slots"]}
+            "initial_slots": observations[0]["slots"], "latest_slots": observations[-1]["slots"],
+            "latest_sites": observations[-1].get("sites", [])}
 
 
 if __name__ == "__main__":
@@ -63,6 +77,8 @@ if __name__ == "__main__":
     parser.add_argument("--minimum-frame", type=int, default=900)
     parser.add_argument("--economy", action="store_true")
     parser.add_argument("--expansion", action="store_true")
+    parser.add_argument("--five-aside", action="store_true")
+    parser.add_argument("--hard-ai", action="store_true")
     args = parser.parse_args()
     print(json.dumps(verify(args.log.read_text(), args.players, args.minimum_frame,
-                            args.economy, args.expansion), indent=2))
+                            args.economy, args.expansion, args.five_aside, args.hard_ai), indent=2))

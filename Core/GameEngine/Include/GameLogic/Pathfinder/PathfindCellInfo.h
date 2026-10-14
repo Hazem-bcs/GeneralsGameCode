@@ -31,8 +31,11 @@ public:
 #if RETAIL_COMPATIBLE_PATHFINDING
 	static void forceCleanPathFindCellInfos();
 #endif
-	static void allocateCellInfos();
+	static void allocateCellInfos(UnsignedInt capacity = 30000);
 	static void releaseCellInfos();
+	static UnsignedInt getCapacity();
+	static UnsignedInt getFreeCount();
+	static UnsignedInt getAllocationFailures();
 
 	static PathfindCellInfo * getACellInfo(PathfindCell *cell, const ICoord2D &pos);
 	static void releaseACellInfo(PathfindCellInfo *theInfo);

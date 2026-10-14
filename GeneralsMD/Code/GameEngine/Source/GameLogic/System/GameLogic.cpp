@@ -81,6 +81,7 @@
 
 #include "GameLogic/AI.h"
 #include "GameLogic/AIPathfind.h"
+#include "GameLogic/Pathfinder/PathfindCellInfo.h"
 #include "GameLogic/CaveSystem.h"
 #include "GameLogic/CrateSystem.h"
 #include "GameLogic/FPUControl.h"
@@ -3930,16 +3931,18 @@ void GameLogic::update()
 	{
         m_frame++;
         if (g_localSkirmishPlayers > 0 && TheGameInfo && m_gameMode == GAME_SKIRMISH &&
-            (m_frame == 150 || m_frame == 900 || m_frame == 3600 || m_frame == 9000 || m_frame == 18000))
+            (m_frame == 150 || (m_frame <= 36000 && m_frame % 900 == 0)))
         {
             fprintf(stderr, "LOCAL_SKIRMISH frame=%u occupied=%d network=%s map=%s\n", m_frame,
                 TheGameInfo->getNumPlayers(), TheNetwork ? "present" : "none", TheGameInfo->getMap().str());
+            fprintf(stderr, "LOCAL_PATHFIND frame=%u capacity=%u free=%u failures=%u\n", m_frame,
+                PathfindCellInfo::getCapacity(), PathfindCellInfo::getFreeCount(), PathfindCellInfo::getAllocationFailures());
             for (Int i = 0; i < TheGameInfo->getSlotCount(); ++i)
             {
                 const GameSlot *slot = TheGameInfo->getConstSlot(i);
                 if (!slot->isOccupied()) continue;
                 Player *player = ThePlayerList->getPlayerFromSlotIndex(i);
-                Int objects = 0, structures = 0, supplyCenters = 0, harvesters = 0, combatUnits = 0;
+                Int objects = 0, structures = 0, supplyCenters = 0, harvesters = 0, combatUnits = 0, techBuildings = 0, frontlineUnits = 0, approachUnits = 0;
                 for (Object *obj = m_objList; obj; obj = obj->getNextObject())
                 {
                     if (obj->getControllingPlayer() != player) continue;
@@ -3947,17 +3950,40 @@ void GameLogic::update()
                     if (obj->isKindOf(KINDOF_STRUCTURE) && !obj->testStatus(OBJECT_STATUS_UNDER_CONSTRUCTION)) ++structures;
                     if (obj->isKindOf(KINDOF_FS_SUPPLY_CENTER) && !obj->testStatus(OBJECT_STATUS_UNDER_CONSTRUCTION)) ++supplyCenters;
                     if (obj->isKindOf(KINDOF_HARVESTER)) ++harvesters;
+                    if (obj->isKindOf(KINDOF_TECH_BUILDING)) ++techBuildings;
                     if (obj->isKindOf(KINDOF_CAN_ATTACK) && !obj->isKindOf(KINDOF_STRUCTURE) &&
-                        !obj->isKindOf(KINDOF_DOZER) && !obj->isKindOf(KINDOF_HARVESTER)) ++combatUnits;
+                        !obj->isKindOf(KINDOF_DOZER) && !obj->isKindOf(KINDOF_HARVESTER)) {
+                        ++combatUnits;
+                        if (obj->getPosition()->x > 2200 && obj->getPosition()->x < 3800) ++frontlineUnits;
+                        AIUpdateInterface *ai = obj->getAIUpdateInterface();
+                        if (ai && (ai->getAIStateType() == AI_FOLLOW_WAYPOINT_PATH_AS_TEAM ||
+                            ai->getAIStateType() == AI_FOLLOW_WAYPOINT_PATH_AS_INDIVIDUALS ||
+                            ai->getAIStateType() == AI_ATTACKFOLLOW_WAYPOINT_PATH_AS_TEAM ||
+                            ai->getAIStateType() == AI_ATTACKFOLLOW_WAYPOINT_PATH_AS_INDIVIDUALS)) ++approachUnits;
+                    }
                 }
-                fprintf(stderr, "LOCAL_SKIRMISH slot=%d ai=%d player=%d start=%d color=%d faction=%d objects=%d skirmishAI=%d local=%d structures=%d supplyCenters=%d harvesters=%d combatUnits=%d cash=%u earned=%d builtUnits=%d kills=%d\n",
+                fprintf(stderr, "LOCAL_SKIRMISH slot=%d ai=%d player=%d start=%d color=%d faction=%d objects=%d skirmishAI=%d local=%d structures=%d supplyCenters=%d harvesters=%d combatUnits=%d cash=%u earned=%d builtUnits=%d kills=%d team=%d aiState=%d techBuildings=%d frontlineUnits=%d approachUnits=%d\n",
                     i, slot->isAI(), player ? player->getPlayerIndex() : -1, slot->getStartPos(),
                     slot->getColor(), slot->getPlayerTemplate(), objects,
                     player ? player->isSkirmishAIPlayer() : -1, player ? player->isLocalPlayer() : -1,
                     structures, supplyCenters, harvesters, combatUnits, player ? player->getMoney()->countMoney() : 0,
                     player ? player->getScoreKeeper()->getTotalMoneyEarned() : 0,
                     player ? player->getScoreKeeper()->getTotalUnitsBuilt() : 0,
-                    player ? player->getScoreKeeper()->getTotalUnitsDestroyed() : 0);
+                    player ? player->getScoreKeeper()->getTotalUnitsDestroyed() : 0,
+                    slot->getTeamNumber(), slot->getState(), techBuildings, frontlineUnits, approachUnits);
+                for (Object *site = m_objList; site; site = site->getNextObject()) {
+                    if (site->getControllingPlayer() == player && site->isKindOf(KINDOF_VEHICLE) &&
+                        !site->isKindOf(KINDOF_AIRCRAFT) && !site->isKindOf(KINDOF_STRUCTURE)) {
+                        AIUpdateInterface *ai = site->getAIUpdateInterface();
+                        fprintf(stderr, "LOCAL_GROUND frame=%u slot=%d id=%u x=%.1f y=%.1f moving=%d combat=%d\n",
+                            m_frame, i, site->getID(), site->getPosition()->x, site->getPosition()->y,
+                            ai ? ai->isMoving() : 0, site->isKindOf(KINDOF_CAN_ATTACK) &&
+                            !site->isKindOf(KINDOF_DOZER) && !site->isKindOf(KINDOF_HARVESTER));
+                    }
+                    if (site->getControllingPlayer() == player && site->isKindOf(KINDOF_FS_SUPPLY_CENTER) &&
+                        !site->testStatus(OBJECT_STATUS_UNDER_CONSTRUCTION))
+                        fprintf(stderr, "LOCAL_SITE slot=%d id=%u x=%.1f y=%.1f\n", i, site->getID(), site->getPosition()->x, site->getPosition()->y);
+                }
             }
             fflush(stderr);
         }

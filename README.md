@@ -13,6 +13,11 @@
 
 # Welcome to the Generals Game Code Project
 
+This owner's `feat/skirmish-ten-players` branch has a local ten-player development
+build and a desert 5v5 map prototype. Continue from
+[HANDOFF_TEN_PLAYERS.md](HANDOFF_TEN_PLAYERS.md), which records the live vehicle-stall
+diagnosis, verified results, private artifacts and unfinished validation.
+
 GeneralsGameCode is a community-driven project aimed at fixing and improving the classic RTS game, *Command &
 Conquer: Generals* and its expansion *Zero Hour*. This repository contains the source code for both games, with a
 primary focus on *Zero Hour*.
