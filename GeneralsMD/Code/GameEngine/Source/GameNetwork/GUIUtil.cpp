@@ -68,7 +68,7 @@ void EnableAcceptControls(Bool Enabled, GameInfo *myGame, GameWindow *comboPlaye
 										GameWindow *comboTeam[], GameWindow *buttonAccept[], GameWindow *buttonStart,
 										GameWindow *buttonMapStartPosition[], Int slotNum)
 {
-	if(slotNum == -1 || slotNum >= MAX_SLOTS )
+	if(slotNum == -1 || slotNum >= myGame->getSlotCount() )
 		slotNum = myGame->getLocalSlotNum();
 
 	Bool isObserver = myGame->getConstSlot(slotNum)->getPlayerTemplate() == PLAYERTEMPLATE_OBSERVER;
@@ -97,7 +97,7 @@ void EnableAcceptControls(Bool Enabled, GameInfo *myGame, GameWindow *comboPlaye
 	Bool canChooseStartSpot = FALSE;
 	if (!isObserver)
 		canChooseStartSpot = TRUE;
-	for (Int i=0; i<MAX_SLOTS && !canChooseStartSpot && myGame->amIHost(); ++i)
+	for (Int i=0; i<myGame->getSlotCount() && !canChooseStartSpot && myGame->amIHost(); ++i)
 	{
 		if (myGame->getConstSlot(i) && myGame->getConstSlot(i)->isAI())
 			canChooseStartSpot = TRUE;
@@ -107,7 +107,7 @@ void EnableAcceptControls(Bool Enabled, GameInfo *myGame, GameWindow *comboPlaye
 	{
 		if (myGame->getConstSlot(myGame->getLocalSlotNum())->hasMap())
 		{
-			for (Int i=0; i<MAX_SLOTS; ++i)
+			for (Int i=0; i<myGame->getSlotCount(); ++i)
 			{
 				if (buttonMapStartPosition[i])
 				{
@@ -117,7 +117,7 @@ void EnableAcceptControls(Bool Enabled, GameInfo *myGame, GameWindow *comboPlaye
 		}
 		else
 		{
-			for (Int i=0; i<MAX_SLOTS; ++i)
+			for (Int i=0; i<myGame->getSlotCount(); ++i)
 			{
 				if (buttonMapStartPosition[i])
 					buttonMapStartPosition[i]->winEnable(FALSE);
@@ -164,7 +164,7 @@ void ShowUnderlyingGUIElements( Bool show, const char *layoutFilename, const cha
 	text = perPlayerGadgetsToHide;
 	while (*text)
 	{
-		for (player = 0; player < MAX_SLOTS; ++player)
+		for (player = 0; player < (strcmp(layoutFilename, "SkirmishGameOptionsMenu.wnd") == 0 ? MAX_SKIRMISH_SLOTS : MAX_SLOTS); ++player)
 		{
 			AsciiString gadgetName;
 			gadgetName.format("%s:%s%d", layoutFilename, *text, player);
@@ -181,9 +181,10 @@ void ShowUnderlyingGUIElements( Bool show, const char *layoutFilename, const cha
 
 // -----------------------------------------------------------------------------
 
+// TheSuperHackers @feature Populate setup controls using the active game capacity.
 void PopulateColorComboBox(Int comboBox, GameWindow *comboArray[], GameInfo *myGame, Bool isObserver)
 {
-	Int numColors = TheMultiplayerSettings->getNumColors();
+	Int numColors = getNumGameColors(myGame);
 	UnicodeString colorName;
 	std::vector<bool> availableColors;
 
@@ -191,7 +192,7 @@ void PopulateColorComboBox(Int comboBox, GameWindow *comboArray[], GameInfo *myG
 	for (; i < numColors; i++)
 		availableColors.push_back(true);
 
-	for (i = 0; i < MAX_SLOTS; i++)
+	for (i = 0; i < myGame->getSlotCount(); i++)
 	{
 		GameSlot *slot = myGame->getSlot(i);
 		if( slot && (i != comboBox) && (slot->getColor() >= 0 )&& (slot->getColor() < numColors))
@@ -222,6 +223,7 @@ void PopulateColorComboBox(Int comboBox, GameWindow *comboArray[], GameInfo *myG
 			continue;
 
 		colorName = TheGameText->fetch(def->getTooltipName().str());
+		if (def->getTooltipName().isEmpty()) colorName.format(L"Color %d", c + 1);
 		newIndex = GadgetComboBoxAddEntry(comboArray[comboBox], colorName, def->getColor());
 		GadgetComboBoxSetItemData(comboArray[comboBox], newIndex, (void *)c);
 	}
@@ -293,7 +295,7 @@ void PopulatePlayerTemplateComboBox(Int comboBox, GameWindow *comboArray[], Game
 
 void PopulateTeamComboBox(Int comboBox, GameWindow *comboArray[], GameInfo *myGame, Bool isObserver)
 {
-	Int numTeams = MAX_SLOTS/2;
+	Int numTeams = myGame->getSlotCount()/2;
 	UnicodeString teamName;
 
 	GadgetComboBoxReset(comboArray[comboBox]);
@@ -313,6 +315,7 @@ void PopulateTeamComboBox(Int comboBox, GameWindow *comboArray[], GameInfo *myGa
 		AsciiString teamStr;
 		teamStr.format("Team:%d", c + 1);
 		teamName = TheGameText->fetch(teamStr.str());
+		if (c >= MAX_SLOTS/2) teamName.format(L"%d", c + 1);
 		newIndex = GadgetComboBoxAddEntry(comboArray[comboBox], teamName, def->getColor());
 		GadgetComboBoxSetItemData(comboArray[comboBox], newIndex, (void *)c);
 	}
@@ -384,7 +387,7 @@ void UpdateSlotList( GameInfo *myGame, GameWindow *comboPlayer[],
 
 	if (myGame)
 	{
-		for( int i =0; i < MAX_SLOTS; i++ )
+		for( int i =0; i < myGame->getSlotCount(); i++ )
 		{
 			GameSlot * slot = myGame->getSlot(i);
 

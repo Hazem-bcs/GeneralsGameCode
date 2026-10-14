@@ -1225,6 +1225,14 @@ void ShellGameLoadScreen::update( Int percent )
 	LoadScreen::update( percent );
 }
 
+// TheSuperHackers @feature Use a separate local layout for ten-player loading.
+static NameKeyType loadScreenControlID(const char *layout, const char *control)
+{
+	AsciiString name;
+	name.format("%s:%s", layout, control);
+	return TheNameKeyGenerator->nameToKey(name);
+}
+
 // MultiPlayerLoadScreen Class //////////////////////////////////////////////////
 //-----------------------------------------------------------------------------
 MultiPlayerLoadScreen::MultiPlayerLoadScreen()
@@ -1234,7 +1242,7 @@ MultiPlayerLoadScreen::MultiPlayerLoadScreen()
 	m_featuresLocalGeneral = nullptr;
 	m_nameLocalGeneral = nullptr;
 
-	for(Int i = 0; i < MAX_SLOTS; ++i)
+	for(Int i = 0; i < MAX_SKIRMISH_SLOTS; ++i)
 	{
 		m_buttonMapStartPosition[i] = nullptr;
 		m_progressBars[i] = nullptr;
@@ -1257,12 +1265,16 @@ MultiPlayerLoadScreen::~MultiPlayerLoadScreen()
 
 void MultiPlayerLoadScreen::init( GameInfo *game )
 {
+	const Int slotCount = game->getSlotCount();
+	const char *layoutName = slotCount > MAX_SLOTS ? "SkirmishLoadScreen.wnd" : "MultiplayerLoadScreen.wnd";
+	AsciiString layoutPath;
+	layoutPath.format("Menus/%s", layoutName);
 	// create the layout of the load screen
-	m_loadScreen = TheWindowManager->winCreateFromScript( "Menus/MultiplayerLoadScreen.wnd" );
+	m_loadScreen = TheWindowManager->winCreateFromScript( layoutPath.str() );
 	DEBUG_ASSERTCRASH(m_loadScreen, ("Can't initialize the Multiplayer loadscreen"));
 	m_loadScreen->winHide(FALSE);
 	m_loadScreen->winBringToTop();
-	m_mapPreview = TheWindowManager->winGetWindowFromId( m_loadScreen,TheNameKeyGenerator->nameToKey( "MultiplayerLoadScreen.wnd:WinMapPreview"));
+	m_mapPreview = TheWindowManager->winGetWindowFromId( m_loadScreen,loadScreenControlID(layoutName, "WinMapPreview"));
 	GameSlot *lSlot = game->getSlot(game->getLocalSlotNum());
 	const PlayerTemplate* pt;
 	if (lSlot->getPlayerTemplate() >= 0)
@@ -1299,12 +1311,12 @@ void MultiPlayerLoadScreen::init( GameInfo *game )
 
 		localName = pt->getDisplayName();
 	}
-	m_portraitLocalGeneral = TheWindowManager->winGetWindowFromId( m_loadScreen,TheNameKeyGenerator->nameToKey( "MultiplayerLoadScreen.wnd:LocalGeneralPortrait"));
+	m_portraitLocalGeneral = TheWindowManager->winGetWindowFromId( m_loadScreen,loadScreenControlID(layoutName, "LocalGeneralPortrait"));
 	m_portraitLocalGeneral->winSetEnabledImage( 0, portrait);
-	m_featuresLocalGeneral = TheWindowManager->winGetWindowFromId( m_loadScreen,TheNameKeyGenerator->nameToKey( "MultiplayerLoadScreen.wnd:LocalGeneralFeatures"));
+	m_featuresLocalGeneral = TheWindowManager->winGetWindowFromId( m_loadScreen,loadScreenControlID(layoutName, "LocalGeneralFeatures"));
 	AsciiString features = pt->getGeneralFeatures();
 	GadgetStaticTextSetText( m_featuresLocalGeneral, TheGameText->fetch( features.isEmpty() ? "GUI:PlayerObserver" : pt->getGeneralFeatures() ) );
-	m_nameLocalGeneral = TheWindowManager->winGetWindowFromId( m_loadScreen,TheNameKeyGenerator->nameToKey( "MultiplayerLoadScreen.wnd:LocalGeneralName"));
+	m_nameLocalGeneral = TheWindowManager->winGetWindowFromId( m_loadScreen,loadScreenControlID(layoutName, "LocalGeneralName"));
 	GadgetStaticTextSetText( m_nameLocalGeneral, localName );
 #endif
 
@@ -1323,42 +1335,42 @@ void MultiPlayerLoadScreen::init( GameInfo *game )
 	//DEBUG_ASSERTCRASH(TheNetwork, ("Where the Heck is the Network!!!!"));
 	//DEBUG_LOG(("NumPlayers %d", TheNetwork->getNumPlayers()));
 
-	GameWindow *teamWin[MAX_SLOTS];
+	GameWindow *teamWin[MAX_SKIRMISH_SLOTS];
 	Int i = 0;
-	for (; i < MAX_SLOTS; ++i)
+	for (; i < slotCount; ++i)
 	{
 		teamWin[i] = nullptr;
 	}
 
 	Int netSlot = 0;
 	// Loop through and make the loadscreen look all good.
-	for (i = 0; i < MAX_SLOTS; ++i)
+	for (i = 0; i < slotCount; ++i)
 	{
 		// Load the Progress Bar
 		AsciiString winName;
-		winName.format( "MultiplayerLoadScreen.wnd:ProgressLoad%d",i);
+		winName.format( "%s:ProgressLoad%d",layoutName,i);
 		m_progressBars[i] = TheWindowManager->winGetWindowFromId( m_loadScreen,TheNameKeyGenerator->nameToKey( winName ));
 		DEBUG_ASSERTCRASH(m_progressBars[i], ("Can't initialize the progressbars for the Multiplayer loadscreen"));
 		// set the progressbar to zero
 		GadgetProgressBarSetProgress(m_progressBars[i], 0 );
 
 		// Load MapStart Positions
-		winName.format( "MultiplayerLoadScreen.wnd:ButtonMapStartPosition%d",i);
+		winName.format( "%s:ButtonMapStartPosition%d",layoutName,i);
 		m_buttonMapStartPosition[i] = TheWindowManager->winGetWindowFromId( m_loadScreen,TheNameKeyGenerator->nameToKey( winName ));
 		DEBUG_ASSERTCRASH(m_buttonMapStartPosition[i], ("Can't initialize the MapStart Positions for the MultiplayerLoadScreen loadscreen"));
 
 
 		// Load the Player's name
-		winName.format( "MultiplayerLoadScreen.wnd:StaticTextPlayer%d",i);
+		winName.format( "%s:StaticTextPlayer%d",layoutName,i);
 		m_playerNames[i] = TheWindowManager->winGetWindowFromId( m_loadScreen,TheNameKeyGenerator->nameToKey( winName ));
 		DEBUG_ASSERTCRASH(m_playerNames[i], ("Can't initialize the Names for the Multiplayer loadscreen"));
 
 		// Load the Player's Side
-		winName.format( "MultiplayerLoadScreen.wnd:StaticTextSide%d",i);
+		winName.format( "%s:StaticTextSide%d",layoutName,i);
 		m_playerSide[i] = TheWindowManager->winGetWindowFromId( m_loadScreen,TheNameKeyGenerator->nameToKey( winName ));
 		DEBUG_ASSERTCRASH(m_playerSide[i], ("Can't initialize the Sides for the Multiplayer loadscreen"));
 
-		winName.format( "MultiplayerLoadScreen.wnd:StaticTextTeam%d",i);
+		winName.format( "%s:StaticTextTeam%d",layoutName,i);
 		teamWin[i] = TheWindowManager->winGetWindowFromId( m_loadScreen,TheNameKeyGenerator->nameToKey( winName ));
 
 		// get the slot man!
@@ -1402,7 +1414,7 @@ void MultiPlayerLoadScreen::init( GameInfo *game )
 		netSlot++;
 	}
 
-	for(i = netSlot; i < MAX_SLOTS; ++i)
+	for(i = netSlot; i < slotCount; ++i)
 	{
 		m_progressBars[i]->winHide(TRUE);
 		m_playerNames[i]->winHide(TRUE);
@@ -1437,7 +1449,7 @@ void MultiPlayerLoadScreen::init( GameInfo *game )
 void MultiPlayerLoadScreen::reset()
 {
 	setLoadScreen(nullptr);
-	for(Int i = 0; i < MAX_SLOTS; ++i)
+	for(Int i = 0; i < MAX_SKIRMISH_SLOTS; ++i)
 	{
 		m_progressBars[i] = nullptr;
 		m_playerNames[i] = nullptr;
@@ -1470,7 +1482,7 @@ void MultiPlayerLoadScreen::update( Int percent )
 void MultiPlayerLoadScreen::processProgress(Int playerId, Int percentage)
 {
 
-	if( percentage < 0 || percentage > 100 || playerId >= MAX_SLOTS || playerId < 0 || m_playerLookup[playerId] == -1)
+	if( percentage < 0 || percentage > 100 || playerId >= MAX_SKIRMISH_SLOTS || playerId < 0 || m_playerLookup[playerId] == -1)
 	{
 		DEBUG_CRASH(("Percentage %d was passed in for Player %d", percentage, playerId));
 		return;

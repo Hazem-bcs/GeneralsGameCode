@@ -20,7 +20,7 @@
 
 #include "GameLogic/Pathfinder/PathfindCellInfo.h"
 
-constexpr const UnsignedInt CELL_INFOS_TO_ALLOCATE = 30000;
+UnsignedInt PathfindCellInfo::s_infoArraySize = DEFAULT_CAPACITY;
 
 PathfindCellInfo *PathfindCellInfo::s_infoArray = nullptr;
 PathfindCellInfo *PathfindCellInfo::s_firstFree = nullptr;
@@ -28,7 +28,9 @@ PathfindCellInfo *PathfindCellInfo::s_firstFree = nullptr;
 #if RETAIL_COMPATIBLE_PATHFINDING
 void PathfindCellInfo::forceCleanPathFindCellInfos()
 {
-	for (Int i = 0; i < CELL_INFOS_TO_ALLOCATE - 1; i++) {
+	// TheSuperHackers @fix Preserve retail cleanup and include all extended records.
+	const UnsignedInt limit = s_infoArraySize == DEFAULT_CAPACITY ? s_infoArraySize - 1 : s_infoArraySize;
+	for (UnsignedInt i = 0; i < limit; i++) {
 		s_infoArray[i].m_nextOpen = nullptr;
 		s_infoArray[i].m_prevOpen = nullptr;
 		s_infoArray[i].m_open = FALSE;
@@ -40,14 +42,15 @@ void PathfindCellInfo::forceCleanPathFindCellInfos()
 /**
  * Allocates a pool of pathfind cell infos.
  */
-void PathfindCellInfo::allocateCellInfos()
+void PathfindCellInfo::allocateCellInfos(UnsignedInt capacity)
 {
 	releaseCellInfos();
-	s_infoArray = MSGNEW("PathfindCellInfo") PathfindCellInfo[CELL_INFOS_TO_ALLOCATE];	// pool[]ify
-	s_infoArray[CELL_INFOS_TO_ALLOCATE-1].m_pathParent = nullptr;
-	s_infoArray[CELL_INFOS_TO_ALLOCATE-1].m_isFree = true;
+	s_infoArraySize = max(capacity, (UnsignedInt)DEFAULT_CAPACITY);
+	s_infoArray = MSGNEW("PathfindCellInfo") PathfindCellInfo[s_infoArraySize];	// pool[]ify
+	s_infoArray[s_infoArraySize-1].m_pathParent = nullptr;
+	s_infoArray[s_infoArraySize-1].m_isFree = true;
 	s_firstFree = s_infoArray;
-	for (Int i=0; i<CELL_INFOS_TO_ALLOCATE-1; i++) {
+	for (UnsignedInt i=0; i<s_infoArraySize-1; i++) {
 		s_infoArray[i].m_pathParent = &s_infoArray[i+1];
 		s_infoArray[i].m_isFree = true;
 	}
@@ -67,7 +70,7 @@ void PathfindCellInfo::releaseCellInfos()
 		DEBUG_ASSERTCRASH(s_firstFree->m_isFree, ("Should be freed."));
 		s_firstFree = s_firstFree->m_pathParent;
 	}
-	DEBUG_ASSERTCRASH(count==CELL_INFOS_TO_ALLOCATE, ("Error - Allocated cellinfos."));
+	DEBUG_ASSERTCRASH(count==s_infoArraySize, ("Error - Allocated cellinfos."));
 	delete[] s_infoArray;
 	s_infoArray = nullptr;
 	s_firstFree = nullptr;

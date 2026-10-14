@@ -48,6 +48,14 @@ enum ConnectionNumbers CPP_11(: Int)
 	MAX_PLAYER = 7,			// The index of the highest possible player number.  This is 0 based, so the most players allowed in a game is MAX_PLAYER+1.
 };
 
+// TheSuperHackers @feature Extend local Skirmish without resizing network packets or masks.
+static constexpr const Int MAX_SKIRMISH_SLOTS =
+#if RTS_ZEROHOUR
+	10;
+#else
+	8;
+#endif
+
 #pragma pack(push, 1)
 struct TransportMessageHeader
 {

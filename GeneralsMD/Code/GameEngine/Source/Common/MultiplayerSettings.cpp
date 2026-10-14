@@ -29,6 +29,7 @@
 
 // INCLUDES ///////////////////////////////////////////////////////////////////////////////////////
 #include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
+#include "GameNetwork/NetworkDefs.h"
 
 #define DEFINE_TERRAIN_LOD_NAMES
 #define DEFINE_TIME_OF_DAY_NAMES
@@ -105,7 +106,7 @@ MultiplayerColorDefinition * MultiplayerSettings::getColor(Int which)
 	{
 		return &m_observerColor;
 	}
-	else if (which < 0 || which >= getNumColors())
+	else if (which < 0 || which >= (Int)m_colorList.size())
 	{
 		return nullptr;
 	}
@@ -171,3 +172,20 @@ void MultiplayerColorDefinition::setNightColor( RGBColor rgb )
 	m_colorNight = rgb.getAsInt() | 0xFF << 24;
 }
 
+
+// TheSuperHackers @feature Add local Skirmish colors without changing the online count.
+Int MultiplayerSettings::getNumSkirmishColors()
+{
+	const Int onlineColors = getNumColors();
+	static const Int extraColors[] = { 0x008080, 0x996633, 0xffffff, 0x808080,
+		0x80ff00, 0x0080ff, 0xff0080, 0x8000ff, 0xff8000, 0x80ffff };
+	while ((Int)m_colorList.size() < MAX_SKIRMISH_SLOTS)
+	{
+		const Int index = m_colorList.size();
+		RGBColor color;
+		color.setFromInt(extraColors[(index - onlineColors) % MAX_SKIRMISH_SLOTS]);
+		m_colorList[index].setColor(color);
+		m_colorList[index].setNightColor(color);
+	}
+	return m_colorList.size();
+}

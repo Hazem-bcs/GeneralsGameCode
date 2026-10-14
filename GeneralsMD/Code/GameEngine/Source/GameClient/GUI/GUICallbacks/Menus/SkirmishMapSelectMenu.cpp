@@ -55,8 +55,9 @@ static GameWindow *mapList = nullptr;
 static NameKeyType radioButtonSystemMapsID = NAMEKEY_INVALID;
 static NameKeyType radioButtonUserMapsID = NAMEKEY_INVALID;
 
-static GameWindow *buttonMapStartPosition[MAX_SLOTS] = {0};
-static NameKeyType buttonMapStartPositionID[MAX_SLOTS] = { NAMEKEY_INVALID,NAMEKEY_INVALID,
+// TheSuperHackers @feature Show all local Skirmish map-start positions.
+static GameWindow *buttonMapStartPosition[MAX_SKIRMISH_SLOTS] = {0};
+static NameKeyType buttonMapStartPositionID[MAX_SKIRMISH_SLOTS] = { NAMEKEY_INVALID,NAMEKEY_INVALID,
 																									NAMEKEY_INVALID,NAMEKEY_INVALID,
 																										NAMEKEY_INVALID,NAMEKEY_INVALID,
 																										NAMEKEY_INVALID,NAMEKEY_INVALID };
@@ -73,7 +74,7 @@ static void NullifyControls()
 		winMapPreview->winSetUserData(nullptr);
 		winMapPreview = nullptr;
 	}
-	for (Int i=0; i<MAX_SLOTS; ++i)
+	for (Int i=0; i<MAX_SKIRMISH_SLOTS; ++i)
 	{
 		buttonMapStartPosition[i] = nullptr;
 	}
@@ -124,7 +125,7 @@ static void mapListTooltipFunc(GameWindow *window,
 }
 
 // PUBLIC FUNCTIONS ///////////////////////////////////////////////////////////////////////////////
-void positionStartSpots( AsciiString mapName, GameWindow *buttonMapStartPositions[], GameWindow *mapWindow);
+void positionStartSpots( AsciiString mapName, GameWindow *buttonMapStartPositions[], GameWindow *mapWindow, Int slotCount = MAX_SKIRMISH_SLOTS);
 void skirmishPositionStartSpots();
 void skirmishUpdateSlotList();
 void showSkirmishGameOptionsUnderlyingGUIElements( Bool show )
@@ -282,7 +283,7 @@ void SkirmishMapSelectMenuInit( WindowLayout *layout, void *userData )
 		GadgetRadioSetSelection( radioButtonUserMaps, FALSE );
 
 	AsciiString tmpString;
-	for (Int i = 0; i < MAX_SLOTS; i++)
+	for (Int i = 0; i < MAX_SKIRMISH_SLOTS; i++)
 	{
 		tmpString.format("SkirmishMapSelectMenu.wnd:ButtonMapStartPosition%d", i);
 		buttonMapStartPositionID[i] = TheNameKeyGenerator->nameToKey( tmpString );
@@ -460,7 +461,7 @@ WindowMsgHandledType SkirmishMapSelectMenuSystem( GameWindow *window, UnsignedIn
 					int rowSelected = mData2;
 					if( rowSelected < 0 )
 					{
-						positionStartSpots( AsciiString::TheEmptyString, buttonMapStartPosition, winMapPreview);
+						positionStartSpots( AsciiString::TheEmptyString, buttonMapStartPosition, winMapPreview, MAX_SKIRMISH_SLOTS);
 						//winMapPreview->winClearStatus(WIN_STATUS_IMAGE);
 						break;
 					}
@@ -488,7 +489,7 @@ WindowMsgHandledType SkirmishMapSelectMenuSystem( GameWindow *window, UnsignedIn
 					{
 						winMapPreview->winClearStatus(WIN_STATUS_IMAGE);
 					}
-					positionStartSpots( asciiMap, buttonMapStartPosition, winMapPreview);
+					positionStartSpots( asciiMap, buttonMapStartPosition, winMapPreview, MAX_SKIRMISH_SLOTS);
 				}
 				break;
 			}
@@ -571,7 +572,7 @@ WindowMsgHandledType SkirmishMapSelectMenuSystem( GameWindow *window, UnsignedIn
 					}
 
 					// reset the start positions
-					for(Int i = 0; i < MAX_SLOTS; ++i)
+					for(Int i = 0; i < MAX_SKIRMISH_SLOTS; ++i)
 						TheSkirmishGameInfo->getSlot(i)->setStartPos(-1);
 					GameWindow *win;
 					win	= TheWindowManager->winGetWindowFromId( parent, TheNameKeyGenerator->nameToKey("SkirmishGameOptionsMenu.wnd:TextEntryMapDisplay") );

@@ -60,12 +60,13 @@
 
 //-------------------------------------------------------------------------------------------------
 
-static NameKeyType staticTextPlayerID[MAX_SLOTS];
-static NameKeyType staticTextSideID[MAX_SLOTS];
-static NameKeyType staticTextTeamID[MAX_SLOTS];
-static NameKeyType staticTextStatusID[MAX_SLOTS];
-static NameKeyType buttonMuteID[MAX_SLOTS];
-static NameKeyType buttonUnMuteID[MAX_SLOTS];
+// TheSuperHackers @feature Display every local Skirmish player in the diplomacy layout.
+static NameKeyType staticTextPlayerID[MAX_SKIRMISH_SLOTS];
+static NameKeyType staticTextSideID[MAX_SKIRMISH_SLOTS];
+static NameKeyType staticTextTeamID[MAX_SKIRMISH_SLOTS];
+static NameKeyType staticTextStatusID[MAX_SKIRMISH_SLOTS];
+static NameKeyType buttonMuteID[MAX_SKIRMISH_SLOTS];
+static NameKeyType buttonUnMuteID[MAX_SKIRMISH_SLOTS];
 static NameKeyType radioButtonInGameID = NAMEKEY_INVALID;
 static NameKeyType radioButtonBuddiesID = NAMEKEY_INVALID;
 static GameWindow *radioButtonInGame = nullptr;
@@ -76,13 +77,13 @@ static NameKeyType winSoloID = NAMEKEY_INVALID;
 static GameWindow *winInGame = nullptr;
 static GameWindow *winBuddies = nullptr;
 static GameWindow *winSolo = nullptr;
-static GameWindow *staticTextPlayer[MAX_SLOTS] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
-static GameWindow *staticTextSide[MAX_SLOTS] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
-static GameWindow *staticTextTeam[MAX_SLOTS] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
-static GameWindow *staticTextStatus[MAX_SLOTS] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
-static GameWindow *buttonMute[MAX_SLOTS] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
-static GameWindow *buttonUnMute[MAX_SLOTS] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
-static Int slotNumInRow[MAX_SLOTS];
+static GameWindow *staticTextPlayer[MAX_SKIRMISH_SLOTS] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+static GameWindow *staticTextSide[MAX_SKIRMISH_SLOTS] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+static GameWindow *staticTextTeam[MAX_SKIRMISH_SLOTS] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+static GameWindow *staticTextStatus[MAX_SKIRMISH_SLOTS] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+static GameWindow *buttonMute[MAX_SKIRMISH_SLOTS] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+static GameWindow *buttonUnMute[MAX_SKIRMISH_SLOTS] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+static Int slotNumInRow[MAX_SKIRMISH_SLOTS];
 
 //-------------------------------------------------------------------------------------------------
 
@@ -95,7 +96,7 @@ void InitBuddyControls(Int type);
 void updateBuddyInfo();
 static void grabWindowPointers()
 {
-	for (Int i=0; i<MAX_SLOTS; ++i)
+	for (Int i=0; i<MAX_SKIRMISH_SLOTS; ++i)
 	{
 		AsciiString temp;
 		temp.format("Diplomacy.wnd:StaticTextPlayer%d", i);
@@ -124,7 +125,7 @@ static void grabWindowPointers()
 
 static void releaseWindowPointers()
 {
-	for (Int i=0; i<MAX_SLOTS; ++i)
+	for (Int i=0; i<MAX_SKIRMISH_SLOTS; ++i)
 	{
 		staticTextPlayer[i] = nullptr;
 		staticTextSide[i] = nullptr;
@@ -211,7 +212,7 @@ void ShowDiplomacy( Bool immediate )
 	}
 	else
 	{
-		theLayout = TheWindowManager->winCreateLayout( "Diplomacy.wnd" );
+		theLayout = TheWindowManager->winCreateLayout( (TheGameInfo && TheGameInfo->getSlotCount() > MAX_SLOTS) ? "SkirmishDiplomacy.wnd" : "Diplomacy.wnd" );
 		theWindow = theLayout->getFirstWindow();
 		theLayout->setUpdate(updateFunc);
 		theAnimateWindowManager = NEW AnimateWindowManager;
@@ -425,7 +426,7 @@ WindowMsgHandledType DiplomacySystem( GameWindow *window, UnsignedInt msg,
 				winBuddies->winHide(FALSE);
 			}
 
-			for (Int i=0; i<MAX_SLOTS; ++i)
+			for (Int i=0; i<MAX_SKIRMISH_SLOTS; ++i)
 			{
 				if (controlID == buttonMuteID[i] && slotNumInRow[i] >= 0)
 				{
@@ -460,7 +461,7 @@ void PopulateInGameDiplomacyPopup()
 		return;
 
 	Int rowNum = 0;
-	for (Int slotNum=0; slotNum<MAX_SLOTS; ++slotNum)
+	for (Int slotNum=0; slotNum<TheGameInfo->getSlotCount(); ++slotNum)
 	{
 		const GameSlot *slot = TheGameInfo->getConstSlot(slotNum);
 		if (slot && slot->isOccupied())
@@ -571,7 +572,7 @@ void PopulateInGameDiplomacyPopup()
 		}
 	}
 
-	while (rowNum < MAX_SLOTS)
+	while (rowNum < MAX_SKIRMISH_SLOTS)
 	{
 		slotNumInRow[rowNum] = -1;
 		if (staticTextPlayer[rowNum])

@@ -20,22 +20,26 @@
 
 #include "Lib/BaseType.h"
 #include "Common/GameType.h"
+
 class PathfindCell;
 
 class PathfindCellInfo
 {
 	friend class PathfindCell;
 public:
+	enum { DEFAULT_CAPACITY = 30000 };
+
 #if RETAIL_COMPATIBLE_PATHFINDING
 	static void forceCleanPathFindCellInfos();
 #endif
-	static void allocateCellInfos();
+	static void allocateCellInfos(UnsignedInt capacity = DEFAULT_CAPACITY);
 	static void releaseCellInfos();
 
 	static PathfindCellInfo * getACellInfo(PathfindCell *cell, const ICoord2D &pos);
 	static void releaseACellInfo(PathfindCellInfo *theInfo);
 
 protected:
+	static UnsignedInt s_infoArraySize;
 	static PathfindCellInfo *s_infoArray;
 	static PathfindCellInfo *s_firstFree;							///<
 

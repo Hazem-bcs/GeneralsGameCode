@@ -34,15 +34,17 @@ class File;
   * The ReplayGameInfo class holds information about the replay game and
 	* the contents of its slot list for reconstructing multiplayer games.
 	*/
+// TheSuperHackers @feature Store local Skirmish slots without resizing the network header.
 class ReplayGameInfo : public GameInfo
 {
 private:
-	GameSlot m_ReplaySlot[MAX_SLOTS];
+	GameSlot m_ReplaySlot[MAX_SKIRMISH_SLOTS];
 
 public:
+	virtual Int getSlotCount() const override { return MAX_SKIRMISH_SLOTS; }
 	ReplayGameInfo() : m_localSlotNum(-1)
 	{
-		for (Int i = 0; i< MAX_SLOTS; ++i)
+		for (Int i = 0; i< MAX_SKIRMISH_SLOTS; ++i)
 			setSlotPointer(i, &m_ReplaySlot[i]);
 	}
 	virtual ~ReplayGameInfo() override {}

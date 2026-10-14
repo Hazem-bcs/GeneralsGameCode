@@ -106,6 +106,7 @@ public:
 		}
 		return m_numColors;
 	}
+	Int getNumSkirmishColors();
 	MultiplayerColorDefinition * getColor(Int which);
 
 

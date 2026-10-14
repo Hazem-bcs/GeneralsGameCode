@@ -50,6 +50,11 @@
 #include "GameLogic/PartitionManager.h"
 #include "GameLogic/TerrainLogic.h"
 #include "GameLogic/Weapon.h"
+#if RTS_ZEROHOUR
+#include "Common/Recorder.h"
+#include "GameNetwork/GameInfo.h"
+#include "GameNetwork/NetworkInterface.h"
+#endif
 #if RETAIL_COMPATIBLE_PATHFINDING
 #include "GameClient/InGameUI.h"
 #include "GameClient/GameText.h"
@@ -882,6 +887,25 @@ void Pathfinder::newMap()
 			m_layers[LAYER_WALL].init(nullptr, LAYER_WALL);
 			m_layers[LAYER_WALL].allocateCellsForWallLayer(&m_extent, m_wallPieces, m_numWallPieces);
 		}
+
+		// TheSuperHackers @bugfix Size the local extended-match pool before cells
+		// acquire records. Apply the same pathfinding to recordings of these games.
+		UnsignedInt infoCapacity = PathfindCellInfo::DEFAULT_CAPACITY;
+#if RTS_ZEROHOUR
+		const GameMode mode = TheGameLogic->isInReplayGame() && TheRecorder
+			? TheRecorder->getGameMode() : TheGameLogic->getGameMode();
+		if (!TheNetwork && TheGameInfo && mode == GAME_SKIRMISH &&
+			TheGameInfo->getNumPlayers() > MAX_SLOTS)
+		{
+			infoCapacity += (bounds.hi.x + 1) * (bounds.hi.y + 1);
+			for (Int layer = 0; layer <= LAYER_LAST; ++layer)
+				infoCapacity += m_layers[layer].getAllocatedCellCount();
+#if RETAIL_COMPATIBLE_PATHFINDING
+			s_useFixedPathfinding = true;
+#endif
+		}
+#endif
+		PathfindCellInfo::allocateCellInfos(infoCapacity);
 	}
 	classifyMap();
 	// Add existing objects.
